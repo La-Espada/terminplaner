@@ -1,0 +1,22 @@
+# Zeilenenden im Repository immer LF, unabhängig vom Betriebssystem.
+# Ohne das wandelt Git unter Windows beim Auschecken in CRLF um, während
+# .editorconfig und Prettier auf LF bestehen – das erzeugt endlose Scheindiffs.
+* text=auto eol=lf
+
+# Binärdateien nicht anfassen
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.keystore binary
+*.jks   binary
+
+# Lockfiles in Diffs zusammenklappen – Änderungen sind selten interessant
+package-lock.json linguist-generated=true -diff

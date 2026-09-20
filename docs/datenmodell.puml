@@ -1,0 +1,368 @@
+@startuml Terminplaner-Datenmodell
+' Datenmodell Terminplaner Kosmetikstudio
+' Gehoert zu docs/PLAN.md, Abschnitt 4
+' Rendern: plantuml -tsvg docs/datenmodell.puml
+
+title Terminplaner Kosmetikstudio – Datenmodell (PostgreSQL)
+
+hide circle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 6
+skinparam defaultFontName "Segoe UI"
+skinparam class {
+  BorderColor #34495E
+  BackgroundColor #FDFEFE
+  ArrowColor #34495E
+}
+skinparam package {
+  BorderColor #95A5A6
+  BackgroundColor #F8F9F9
+  FontStyle bold
+}
+
+legend top right
+  | <b>Legende</b> |
+  | PK = Primaerschluessel |
+  | FK = Fremdschluessel |
+  | UK = Unique |
+  | * = NOT NULL |
+  | <color:#C0392B><b>Art. 9</b></color> = Gesundheitsdaten, verschluesselt |
+endlegend
+
+' =====================================================
+package "Identitaet & Auth" {
+
+  enum UserRole {
+    ADMIN
+    STAFF
+    CUSTOMER
+  }
+
+  enum UserStatus {
+    ACTIVE
+    BLOCKED
+    ANONYMIZED
+  }
+
+  entity "users" as users {
+    * id : uuid <<PK>>
+    --
+    * email : citext <<UK>>
+    * password_hash : text
+    * role : UserRole
+    * first_name : text
+    * last_name : text
+      phone : text
+      email_verified_at : timestamptz
+    * status : UserStatus
+    * created_at : timestamptz
+    * updated_at : timestamptz
+      anonymized_at : timestamptz
+  }
+  note bottom of users
+    Argon2id als Hash-Verfahren.
+
+    <b>Kein Soft-Delete.</b> Es gibt bewusst
+    kein deleted_at. Art. 17 wird durch
+    <b>Anonymisierung</b> erfuellt:
+    email -> deleted-<uuid>@invalid,
+    Name, Telefon geloescht,
+    Notiz-Schluessel vernichtet.
+    Die Zeile bleibt nur als Anker fuer
+    die buchhalterisch aufzubewahrenden
+    Termine bestehen.
+    anonymized_at = Zeitpunkt davon.
+  end note
+
+  entity "refresh_tokens" as refresh_tokens {
+    * id : uuid <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * token_hash : text
+      device_label : text
+    * expires_at : timestamptz
+      revoked_at : timestamptz
+  }
+
+  entity "device_tokens" as device_tokens {
+    * id : uuid <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * platform : Platform
+    * token : text
+    * last_seen_at : timestamptz
+  }
+
+  enum Platform {
+    IOS
+    ANDROID
+  }
+}
+
+' =====================================================
+package "Stammdaten" {
+
+  entity "staff_profiles" as staff_profiles {
+    * id : uuid <<PK>>
+    --
+    * user_id : uuid <<FK,UK>>
+    * display_name : text
+      bio : text
+      photo_url : text
+    * is_active : boolean
+      color_hex : char(7)
+  }
+
+  entity "services" as services {
+    * id : uuid <<PK>>
+    --
+    * name : text
+      description : text
+    * duration_minutes : int
+    * buffer_minutes : int
+    * price_cents : int
+    * is_active : boolean
+    * sort_order : int
+  }
+
+  entity "staff_services" as staff_services {
+    * staff_id : uuid <<PK,FK>>
+    * service_id : uuid <<PK,FK>>
+  }
+  note right of staff_services
+    Reine Verknüpfung:
+    wer bietet was an.
+    Dauer und Preis gelten
+    studioweit einheitlich
+    und stehen nur in services.
+  end note
+
+  entity "working_hours" as working_hours {
+    * id : uuid <<PK>>
+    --
+    * staff_id : uuid <<FK>>
+    * weekday : smallint
+    * start_time : time
+    * end_time : time
+  }
+  note right of working_hours
+    <b>Wiederkehrende</b> Regel, jede Woche,
+    ohne Datum.
+    Feste Mittagspause = zwei Zeilen
+    fuer denselben Wochentag:
+    9-12 und 13-17.
+  end note
+
+  enum TimeOffType {
+    VACATION
+    SICK
+    TRAINING
+    PUBLIC_HOLIDAY
+    CLOSURE
+    OTHER
+  }
+
+  entity "time_off" as time_off {
+    * id : uuid <<PK>>
+    --
+      staff_id : uuid <<FK>>
+    * starts_at : timestamptz
+    * ends_at : timestamptz
+    * type : TimeOffType
+    * is_all_day : boolean
+  }
+  note right of time_off
+    <b>Einmalige</b> Ausnahme mit konkretem
+    Datum. Wiederkehrendes gehoert in
+    working_hours.
+
+    staff_id NULL = ganzes Studio
+    (Feiertag, Betriebsurlaub).
+
+    <color:#C0392B><b>Bewusst kein Freitext.</b></color>
+    "Reha nach Bandscheiben-OP" waere
+    ein Art.-9-Datum ueber Beschaeftigte.
+    Fuer Kalender und Planung genuegt
+    die Kategorie.
+  end note
+}
+
+' =====================================================
+package "Terminwesen" {
+
+  enum AppointmentStatus {
+    PENDING
+    CONFIRMED
+    CANCELLED_BY_CUSTOMER
+    CANCELLED_BY_STAFF
+    COMPLETED
+    NO_SHOW
+  }
+
+  entity "appointments" as appointments {
+    * id : uuid <<PK>>
+    --
+    * customer_id : uuid <<FK>>
+    * staff_id : uuid <<FK>>
+    * service_id : uuid <<FK>>
+    * starts_at : timestamptz
+    * ends_at : timestamptz
+    * status : AppointmentStatus
+    * price_cents_snapshot : int
+      customer_note_encrypted : bytea
+      cancelled_at : timestamptz
+      cancellation_reason : text
+    * created_at : timestamptz
+    * updated_at : timestamptz
+  }
+  note bottom of appointments
+    <b>Ueberschneidungsschutz in der DB:</b>
+    EXCLUDE USING gist (
+      staff_id WITH =,
+      tstzrange(starts_at, ends_at) WITH &&
+    ) WHERE (status IN ('PENDING','CONFIRMED'))
+
+    ends_at und price_cents_snapshot
+    berechnet ausschliesslich der Server.
+
+    <color:#C0392B><b>customer_note_encrypted:</b></color>
+    Freitext der Kundin. Enthaelt
+    erfahrungsgemaess Gesundheitsangaben
+    ("Neurodermitis", "schwanger"),
+    daher <b>wie Art.-9-Daten behandelt</b>:
+    gleiche Verschluesselung und
+    Zugriffsprotokollierung wie
+    treatment_notes, Feld nur sichtbar
+    bei erteilter HEALTH_DATA-Einwilligung.
+  end note
+
+  entity "treatment_notes" as treatment_notes #FDEDEC {
+    * id : uuid <<PK>>
+    --
+    * appointment_id : uuid <<FK>>
+    * customer_id : uuid <<FK>>
+    * author_staff_id : uuid <<FK>>
+    * content_encrypted : bytea
+    * created_at : timestamptz
+  }
+  note bottom of treatment_notes
+    <color:#C0392B><b>Art. 9 DSGVO – Gesundheitsdaten</b></color>
+    AES-256-GCM, Schluessel im KMS/Vault,
+    nicht in der Datenbank.
+    Zugriff nur mit Einwilligung HEALTH_DATA,
+    jeder Lesezugriff geht ins audit_log.
+    Niemals in Push, Mail oder Logs.
+  end note
+}
+
+' =====================================================
+package "DSGVO & Compliance" {
+
+  enum ConsentType {
+    TOS
+    PRIVACY
+    HEALTH_DATA
+    MARKETING
+    PUSH
+  }
+
+  entity "consents" as consents {
+    * id : uuid <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * type : ConsentType
+    * version : text
+    * granted : boolean
+    * granted_at : timestamptz
+      revoked_at : timestamptz
+      ip_hash : text
+  }
+  note right of consents
+    Version + Zeitstempel je Einwilligung.
+    Aendert sich die Datenschutz-
+    erklaerung, wird neu eingeholt.
+  end note
+
+  entity "audit_log" as audit_log {
+    * id : bigserial <<PK>>
+    --
+      actor_user_id : uuid <<FK>>
+    * action : text
+    * entity_type : text
+      entity_id : uuid
+      metadata : jsonb
+    * is_art9_access : boolean
+    * created_at : timestamptz
+      ip_hash : text
+  }
+  note bottom of audit_log
+    <color:#C0392B><b>metadata enthaelt nur Verweise,
+    niemals Inhalte.</b></color> Kein alter/neuer
+    Wert von Notizen oder customer_note –
+    sonst liegt Art.-9-Klartext im Log
+    neben der verschluesselten Tabelle.
+    Erlaubt: IDs, Feldnamen, Statuswerte.
+
+    Eigene Aufbewahrungsfristen:
+    normale Eintraege kuerzer,
+    is_art9_access laenger (Rechenschafts-
+    pflicht). Werte in der Konfiguration,
+    siehe .env.example.
+  end note
+}
+
+' =====================================================
+package "Benachrichtigungen" {
+
+  enum Channel {
+    PUSH
+    EMAIL
+  }
+
+  entity "notifications_outbox" as notifications_outbox {
+    * id : uuid <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * channel : Channel
+    * template : text
+    * payload : jsonb
+    * scheduled_for : timestamptz
+      sent_at : timestamptz
+      failed_reason : text
+  }
+  note bottom of notifications_outbox
+    Transactional Outbox.
+    payload enthaelt nur appointment_id,
+    keine Klartextinhalte (FCM/APNs = USA).
+  end note
+}
+
+' =====================================================
+' Beziehungen
+' =====================================================
+
+users ||--o| staff_profiles : "ist Kosmetiker:in"
+users ||--o{ refresh_tokens : "Sessions"
+users ||--o{ device_tokens : "Geraete"
+users ||--o{ consents : "Einwilligungen"
+users ||--o{ notifications_outbox : "Empfaenger"
+users |o--o{ audit_log : "Akteur"
+
+staff_profiles ||--o{ staff_services
+services       ||--o{ staff_services
+
+staff_profiles ||--o{ working_hours : "Regelarbeitszeit"
+staff_profiles |o--o{ time_off : "Abwesenheit"
+
+users          ||--o{ appointments : "bucht"
+staff_profiles ||--o{ appointments : "fuehrt durch"
+services       ||--o{ appointments : "Leistung"
+
+appointments   ||--o{ treatment_notes : "dokumentiert"
+users          ||--o{ treatment_notes : "betrifft"
+staff_profiles ||--o{ treatment_notes : "verfasst"
+
+appointments   ..>  notifications_outbox : "loest aus"
+
+@enduml

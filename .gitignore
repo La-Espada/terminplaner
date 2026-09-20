@@ -1,0 +1,56 @@
+# Abhängigkeiten
+node_modules/
+.pnp/
+.pnp.js
+
+# Builds
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Umgebungsvariablen – NIEMALS committen
+.env
+.env.*
+!.env.example
+
+# Schlüsselmaterial
+*.pem
+*.key
+*.p8
+*.p12
+*.keystore
+*.jks
+google-services.json
+GoogleService-Info.plist
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Tests und Werkzeuge
+coverage/
+.nyc_output/
+.eslintcache
+
+# Expo / React Native
+.expo/
+.expo-shared/
+*.jsbundle
+
+# Betriebssystem
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+
+# Docker-Volumes, falls lokal gemountet
+docker-data/
