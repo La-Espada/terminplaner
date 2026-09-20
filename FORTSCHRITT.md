@@ -22,6 +22,10 @@ dran ist. Die Schrittnummern beziehen sich auf [docs/UMSETZUNG.md](docs/UMSETZUN
 - [x] **4. Datenbankschema** — alle 13 Tabellen und 7 Enums als Prisma-Migration
       `20260920202513_init_schema`. Modelle in TypeScript-Schreibweise, Tabellen und
       Spalten per `@map` in snake_case.
+- [x] **5. Überschneidungsschutz** — Exclusion-Constraint `appointments_no_overlap` als
+      von Hand geschriebene Migration `20260920210224_appointment_overlap_constraint`.
+      Dazu acht CHECK-Constraints gegen unsinnige Werte (Ende vor Beginn, negative
+      Preise, Wochentag ausserhalb 0–6).
 
 Geprüfter Stand der Infrastruktur:
 
@@ -46,11 +50,24 @@ Nach Schritt 4 gegen die laufende Datenbank geprüft:
 | Verschlüsselte Felder | `Bytes` laufen unverändert hin und zurück                 |
 | `time_off` studioweit | `staff_id = NULL` funktioniert                            |
 
+Verhalten des Überschneidungsschutzes, gegen die Datenbank geprüft:
+
+| Fall                                    | Verhalten   |
+| --------------------------------------- | ----------- |
+| Überlappung 09:30–10:30 auf 09:00–10:00 | abgelehnt   |
+| Überlappung von vorne 08:30–09:30       | abgelehnt   |
+| vollständig enthalten 09:15–09:45       | abgelehnt   |
+| **Anschlusstermin 10:00–11:00**         | **erlaubt** |
+| **gleiche Zeit, andere Kosmetiker:in**  | **erlaubt** |
+| **nach Storno derselbe Slot**           | **erlaubt** |
+| rückwärts laufend 15:00–14:00           | abgelehnt   |
+| ohne Dauer 16:00–16:00                  | abgelehnt   |
+
+Die drei erlaubten Fälle sind genauso wichtig wie die abgelehnten — ein zu strenger
+Constraint würde den Kalender unbenutzbar machen.
+
 ## Als Nächstes
 
-- [ ] **5. Überschneidungsschutz** — `btree_gist` aktivieren, Exclusion-Constraint auf
-      `appointments`. Braucht in Prisma eine manuell ergänzte Migration, weil Prisma
-      Exclusion-Constraints nicht selbst erzeugt.
 - [ ] **6. Nebenläufigkeitstest schreiben** — bleibt absichtlich rot bis Schritt 22.
       Dabei kommt auch das Testframework ins Projekt, bisher gibt es keins.
 - [ ] **7. CI-Pipeline** — GitHub Actions: Lint, Test, Build, Migration.
