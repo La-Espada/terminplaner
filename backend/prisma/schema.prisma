@@ -1,16 +1,391 @@
 // Datenmodell des Terminplaners.
-// Der fachliche Entwurf steht in docs/datenmodell.puml und docs/PLAN.md Abschnitt 4.
 //
-// Noch ohne Modelle — die 13 Tabellen kommen in Schritt 4 der Umsetzungsreihenfolge.
+// Fachlicher Entwurf: docs/datenmodell.puml und docs/PLAN.md Abschnitt 4.
+// Begründungen zu den Entwurfsentscheidungen: docs/ENTSCHEIDUNGEN.md.
 //
-// Die Verbindungs-URL steht seit Prisma 7 nicht mehr hier, sondern in prisma.config.ts.
-// Zur Laufzeit bekommt der Client einen Treiber-Adapter (@prisma/adapter-pg) uebergeben,
-// siehe src/prisma/prisma.service.ts.
+// Konventionen:
+// - Modelle und Felder in TypeScript-Schreibweise, Tabellen und Spalten per @map
+//   in snake_case. So bleibt der SQL-Teil lesbar und der Client idiomatisch.
+// - Alle Zeitstempel sind timestamptz und liegen in UTC (E-06). Die Studio-Zeitzone
+//   steht in STUDIO_TIMEZONE und dient nur Anzeige und Berechnung.
+// - Geldbeträge sind ganzzahlige Cent (E-08).
+//
+// Die Verbindungs-URL steht seit Prisma 7 in prisma.config.ts, nicht hier.
+// Zur Laufzeit bekommt der Client einen Treiber-Adapter, siehe src/prisma/prisma.service.ts.
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  // citext: E-Mail-Adressen ohne Rücksicht auf Groß- und Kleinschreibung eindeutig.
+  // btree_gist: Voraussetzung für den Überschneidungsschutz auf appointments (Schritt 5).
+  extensions = [citext, btree_gist]
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+// ============================================================
+// Identität und Auth
+// ============================================================
+
+enum UserRole {
+  ADMIN
+  STAFF
+  CUSTOMER
+
+  @@map("user_role")
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+  ANONYMIZED
+
+  @@map("user_status")
+}
+
+/// Alle Personen im System, unterschieden über `role`.
+/// Gemeinsame Tabelle, weil Anmeldung, Passwort-Reset und Löschung für alle gleich sind.
+model User {
+  id              String     @id @default(uuid()) @db.Uuid
+  email           String     @unique @db.Citext
+  passwordHash    String     @map("password_hash")
+  role            UserRole
+  firstName       String     @map("first_name")
+  lastName        String     @map("last_name")
+  phone           String?
+  emailVerifiedAt DateTime?  @map("email_verified_at") @db.Timestamptz(3)
+  status          UserStatus @default(ACTIVE)
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  /// Kein Soft-Delete (E-15). Gesetzt, wenn der Personenbezug entfernt wurde.
+  anonymizedAt DateTime? @map("anonymized_at") @db.Timestamptz(3)
+
+  staffProfile  StaffProfile?
+  appointments  Appointment[]
+  notes         TreatmentNote[]
+  consents      Consent[]
+  auditEntries  AuditLogEntry[]
+  refreshTokens RefreshToken[]
+  deviceTokens  DeviceToken[]
+  notifications NotificationOutbox[]
+
+  @@index([status])
+  @@map("users")
+}
+
+model RefreshToken {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  tokenHash   String    @unique @map("token_hash")
+  deviceLabel String?   @map("device_label")
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
+
+  @@map("device_platform")
+}
+
+/// Push-Adressen. Eine Zeile je Gerät, nicht je Person — jemand nutzt Handy und Tablet.
+/// Beim Logout wird der Eintrag gelöscht, sonst bekommt die nächste Person am selben
+/// Gerät die Terminerinnerungen der vorherigen.
+model DeviceToken {
+  id         String         @id @default(uuid()) @db.Uuid
+  userId     String         @map("user_id") @db.Uuid
+  platform   DevicePlatform
+  token      String         @unique
+  lastSeenAt DateTime       @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([lastSeenAt])
+  @@map("device_tokens")
+}
+
+// ============================================================
+// Stammdaten
+// ============================================================
+
+model StaffProfile {
+  id          String  @id @default(uuid()) @db.Uuid
+  userId      String  @unique @map("user_id") @db.Uuid
+  displayName String  @map("display_name")
+  bio         String?
+  photoUrl    String? @map("photo_url")
+  isActive    Boolean @default(true) @map("is_active")
+  /// Farbe im Admin-Kalender, Format #rrggbb
+  colorHex    String? @map("color_hex") @db.Char(7)
+
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  services     StaffService[]
+  workingHours WorkingHours[]
+  timeOff      TimeOff[]
+  appointments Appointment[]
+  authoredNotes TreatmentNote[]
+
+  @@index([isActive])
+  @@map("staff_profiles")
+}
+
+/// Dienstleistungen. Einzige Quelle für Dauer und Preis (E-10).
+model Service {
+  id              String  @id @default(uuid()) @db.Uuid
+  name            String
+  description     String?
+  durationMinutes Int     @map("duration_minutes")
+  /// Aufräumzeit nach der Behandlung. Blockiert den Kalender, ist aber kein Termin.
+  bufferMinutes   Int     @default(0) @map("buffer_minutes")
+  priceCents      Int     @map("price_cents")
+  isActive        Boolean @default(true) @map("is_active")
+  sortOrder       Int     @default(0) @map("sort_order")
+
+  staff        StaffService[]
+  appointments Appointment[]
+
+  @@index([isActive, sortOrder])
+  @@map("services")
+}
+
+/// Wer bietet was an. Reine Verknüpfung ohne eigene Werte (E-10).
+model StaffService {
+  staffId   String @map("staff_id") @db.Uuid
+  serviceId String @map("service_id") @db.Uuid
+
+  staff   StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  service Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([staffId, serviceId])
+  @@index([serviceId])
+  @@map("staff_services")
+}
+
+/// Wiederkehrende Regelarbeitszeit (E-11). Eine feste Mittagspause wird als zwei
+/// Zeilen für denselben Wochentag abgebildet: 9–12 und 13–17.
+model WorkingHours {
+  id      String @id @default(uuid()) @db.Uuid
+  staffId String @map("staff_id") @db.Uuid
+  /// 0 = Sonntag bis 6 = Samstag
+  weekday Int    @db.SmallInt
+  startTime DateTime @map("start_time") @db.Time(0)
+  endTime   DateTime @map("end_time") @db.Time(0)
+
+  staff StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, weekday])
+  @@map("working_hours")
+}
+
+enum TimeOffType {
+  VACATION
+  SICK
+  TRAINING
+  PUBLIC_HOLIDAY
+  CLOSURE
+  OTHER
+
+  @@map("time_off_type")
+}
+
+/// Einmalige Abwesenheit mit konkretem Datum (E-11).
+/// Bewusst ohne Freitextfeld — ein `reason` würde Gesundheitsdaten über Beschäftigte
+/// einladen (E-12).
+model TimeOff {
+  id       String      @id @default(uuid()) @db.Uuid
+  /// NULL bedeutet: gilt für das ganze Studio (Feiertag, Betriebsurlaub).
+  staffId  String?     @map("staff_id") @db.Uuid
+  startsAt DateTime    @map("starts_at") @db.Timestamptz(3)
+  endsAt   DateTime    @map("ends_at") @db.Timestamptz(3)
+  type     TimeOffType
+  isAllDay Boolean     @default(false) @map("is_all_day")
+
+  staff StaffProfile? @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, startsAt])
+  @@index([startsAt, endsAt])
+  @@map("time_off")
+}
+
+// ============================================================
+// Terminwesen
+// ============================================================
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED_BY_CUSTOMER
+  CANCELLED_BY_STAFF
+  COMPLETED
+  NO_SHOW
+
+  @@map("appointment_status")
+}
+
+model Appointment {
+  id         String @id @default(uuid()) @db.Uuid
+  customerId String @map("customer_id") @db.Uuid
+  staffId    String @map("staff_id") @db.Uuid
+  serviceId  String @map("service_id") @db.Uuid
+
+  startsAt DateTime @map("starts_at") @db.Timestamptz(3)
+  /// Redundant zu startsAt plus Dauer, aber nötig: nur so kann die Datenbank
+  /// Überschneidungen prüfen (E-07). Berechnet ausschließlich der Server.
+  endsAt   DateTime @map("ends_at") @db.Timestamptz(3)
+
+  status AppointmentStatus @default(CONFIRMED)
+
+  /// Preis zum Zeitpunkt der Buchung, unveränderlich (E-09).
+  priceCentsSnapshot Int @map("price_cents_snapshot")
+
+  /// Freitext der Kundin. Enthält erfahrungsgemäß Gesundheitsangaben und wird
+  /// deshalb wie ein Art.-9-Feld behandelt: verschlüsselt, zugriffsprotokolliert,
+  /// nur bei erteilter HEALTH_DATA-Einwilligung erfassbar (E-14).
+  customerNoteEncrypted Bytes? @map("customer_note_encrypted")
+
+  cancelledAt        DateTime? @map("cancelled_at") @db.Timestamptz(3)
+  cancellationReason String?   @map("cancellation_reason")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  customer User            @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  staff    StaffProfile    @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  service  Service         @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  notes    TreatmentNote[]
+
+  @@index([staffId, startsAt])
+  @@index([customerId, startsAt(sort: Desc)])
+  @@index([status, startsAt])
+  @@map("appointments")
+}
+
+/// Behandlungsdokumentation — Gesundheitsdaten nach Art. 9 DSGVO (E-13).
+/// Eigene Tabelle, feldverschlüsselt, Schlüssel im KMS und nicht in der Datenbank.
+/// Jeder Lesezugriff wird im audit_log mit is_art9_access festgehalten.
+model TreatmentNote {
+  id               String   @id @default(uuid()) @db.Uuid
+  appointmentId    String   @map("appointment_id") @db.Uuid
+  customerId       String   @map("customer_id") @db.Uuid
+  authorStaffId    String   @map("author_staff_id") @db.Uuid
+  contentEncrypted Bytes    @map("content_encrypted")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  appointment Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  customer    User         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  author      StaffProfile @relation(fields: [authorStaffId], references: [id], onDelete: Restrict)
+
+  @@index([customerId, createdAt(sort: Desc)])
+  @@index([appointmentId])
+  @@map("treatment_notes")
+}
+
+// ============================================================
+// DSGVO und Nachweis
+// ============================================================
+
+enum ConsentType {
+  TOS
+  PRIVACY
+  HEALTH_DATA
+  MARKETING
+  PUSH
+
+  @@map("consent_type")
+}
+
+/// Einwilligungen mit Version und Zeitstempel — Nachweispflicht aus Art. 7 Abs. 1.
+/// Bleiben auch nach der Anonymisierung bestehen: Der Nachweis, dass eingewilligt
+/// wurde, muss die Löschung überleben (E-15).
+model Consent {
+  id        String      @id @default(uuid()) @db.Uuid
+  userId    String      @map("user_id") @db.Uuid
+  type      ConsentType
+  /// Fassung des Textes, dem zugestimmt wurde. Ohne Archiv der Fassungen wertlos.
+  version   String
+  granted   Boolean
+  grantedAt DateTime    @default(now()) @map("granted_at") @db.Timestamptz(3)
+  revokedAt DateTime?   @map("revoked_at") @db.Timestamptz(3)
+  ipHash    String?     @map("ip_hash")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, type])
+  @@map("consents")
+}
+
+/// Änderungs- und Zugriffsprotokoll.
+///
+/// `metadata` enthält NUR Verweise — IDs, Feldnamen, Statuswerte — und niemals
+/// Inhalte (E-16). Wer beim Debuggen den Klartext einer Notiz mitschreibt, legt
+/// Art.-9-Daten unverschlüsselt neben die verschlüsselte Tabelle.
+model AuditLogEntry {
+  id           BigInt   @id @default(autoincrement())
+  actorUserId  String?  @map("actor_user_id") @db.Uuid
+  action       String
+  entityType   String   @map("entity_type")
+  entityId     String?  @map("entity_id") @db.Uuid
+  metadata     Json?
+  /// Markiert Lesezugriffe auf Gesundheitsdaten. Diese Einträge werden länger
+  /// aufbewahrt als normale — Rechenschaftspflicht.
+  isArt9Access Boolean  @default(false) @map("is_art9_access")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  ipHash       String?  @map("ip_hash")
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@index([isArt9Access, createdAt])
+  @@map("audit_log")
+}
+
+// ============================================================
+// Benachrichtigungen
+// ============================================================
+
+enum NotificationChannel {
+  PUSH
+  EMAIL
+
+  @@map("notification_channel")
+}
+
+/// Transactional Outbox: Die Benachrichtigung wird in derselben Transaktion
+/// eingetragen wie der Termin. So geht keine verloren und keine wird doppelt
+/// versendet, wenn die Transaktion zurückrollt.
+///
+/// `payload` enthält nur eine appointment_id und ähnliche Verweise, keine
+/// Klartextinhalte — Push läuft über Google und Apple (E-18).
+model NotificationOutbox {
+  id           String              @id @default(uuid()) @db.Uuid
+  userId       String              @map("user_id") @db.Uuid
+  channel      NotificationChannel
+  template     String
+  payload      Json
+  scheduledFor DateTime            @map("scheduled_for") @db.Timestamptz(3)
+  sentAt       DateTime?           @map("sent_at") @db.Timestamptz(3)
+  attempts     Int                 @default(0)
+  failedReason String?             @map("failed_reason")
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Der Worker holt fällige, noch nicht versendete Einträge.
+  @@index([sentAt, scheduledFor])
+  @@index([userId])
+  @@map("notifications_outbox")
 }

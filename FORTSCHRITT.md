@@ -19,6 +19,9 @@ dran ist. Die Schrittnummern beziehen sich auf [docs/UMSETZUNG.md](docs/UMSETZUN
 - [x] **3. NestJS-Skelett** — Backend mit Prisma 7, Konfiguration über Umgebungsvariablen
       mit Joi-Validierung beim Start, Health-Endpoint. `GET /api/v1/health` liefert
       `{"status":"ok","checks":{"database":"up"}}`.
+- [x] **4. Datenbankschema** — alle 13 Tabellen und 7 Enums als Prisma-Migration
+      `20260920202513_init_schema`. Modelle in TypeScript-Schreibweise, Tabellen und
+      Spalten per `@map` in snake_case.
 
 Geprüfter Stand der Infrastruktur:
 
@@ -30,12 +33,21 @@ Geprüfter Stand der Infrastruktur:
 | Mailpit    | erreichbar auf http://localhost:8025                                      |
 | API        | `GET /api/v1/health` → `200`, Datenbankverbindung steht                   |
 
+Nach Schritt 4 gegen die laufende Datenbank geprüft:
+
+| Prüfung               | Ergebnis                                                  |
+| --------------------- | --------------------------------------------------------- |
+| Tabellen              | 13 plus `_prisma_migrations`                              |
+| Enums                 | 7, mit den erwarteten Werten                              |
+| Extensions            | `citext` 1.6 und `btree_gist` 1.7 aktiv                   |
+| `users.email`         | tatsächlich `citext` — Groß-/Kleinschreibung kollidiert   |
+| Zeitstempel           | `timestamptz`, UTC rein und exakt wieder heraus           |
+| Preis-Snapshot        | Preisänderung am Service lässt gebuchten Termin unberührt |
+| Verschlüsselte Felder | `Bytes` laufen unverändert hin und zurück                 |
+| `time_off` studioweit | `staff_id = NULL` funktioniert                            |
+
 ## Als Nächstes
 
-- [ ] **4. Datenbankschema** — alle 13 Tabellen aus `docs/datenmodell.puml` als
-      Prisma-Migration. `prisma/schema.prisma` enthält bisher nur Datasource und
-      Generator, noch keine Modelle.
-      _Fertig, wenn:_ Migration läuft auf leerer Datenbank durch, `\dt` zeigt alle Tabellen.
 - [ ] **5. Überschneidungsschutz** — `btree_gist` aktivieren, Exclusion-Constraint auf
       `appointments`. Braucht in Prisma eine manuell ergänzte Migration, weil Prisma
       Exclusion-Constraints nicht selbst erzeugt.
