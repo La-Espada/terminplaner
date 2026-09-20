@@ -45,9 +45,24 @@ npm run db:up
 
 Danach laufen:
 
-- PostgreSQL auf `localhost:5432`
+- PostgreSQL auf `127.0.0.1:5433`
 - Redis auf `localhost:6379`
 - Mailpit auf http://localhost:8025 — fängt alle Mails ab, es wird lokal nichts echt versendet
+
+> **Warum 5433 und nicht 5432?** Auf dem Entwicklungsrechner belegt eine native
+> PostgreSQL-Installation bereits 5432. Und warum `127.0.0.1` statt `localhost`? Unter
+> Windows löst `localhost` zuerst auf IPv6 auf, Docker veröffentlicht Ports aber auf IPv4.
+> Beides steht ausführlicher in `docs/ENTSCHEIDUNGEN.md` unter E-24.
+
+Backend starten:
+
+```bash
+npm run build --workspace @terminplaner/backend
+npm run start --workspace @terminplaner/backend
+```
+
+Prüfen: http://127.0.0.1:3000/api/v1/health sollte `{"status":"ok", ... "database":"up"}`
+liefern.
 
 ## Befehle
 

@@ -1,0 +1,16 @@
+// Datenmodell des Terminplaners.
+// Der fachliche Entwurf steht in docs/datenmodell.puml und docs/PLAN.md Abschnitt 4.
+//
+// Noch ohne Modelle — die 13 Tabellen kommen in Schritt 4 der Umsetzungsreihenfolge.
+//
+// Die Verbindungs-URL steht seit Prisma 7 nicht mehr hier, sondern in prisma.config.ts.
+// Zur Laufzeit bekommt der Client einen Treiber-Adapter (@prisma/adapter-pg) uebergeben,
+// siehe src/prisma/prisma.service.ts.
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}

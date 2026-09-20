@@ -36,6 +36,9 @@ gültig, dreh sie um — aber trag die Änderung hier ein, mit Datum.
 | [E-19](#e-19) | Backups täglich, 30 Tage flach                       | 2026-09-20 | gültig       |
 | [E-20](#e-20) | Buchungsregeln als Konfiguration, nicht als Code     | 2026-09-17 | gültig       |
 | [E-21](#e-21) | Gesundheitsdaten bleiben in Version 1                | 2026-09-17 | gültig       |
+| [E-22](#e-22) | Nest-CLI entfernt, Build mit reinem tsc              | 2026-09-20 | gültig       |
+| [E-23](#e-23) | Prisma auf 7.10.0 gepinnt statt Release-Candidate    | 2026-09-20 | gültig       |
+| [E-24](#e-24) | PostgreSQL auf Port 5433 statt 5432                  | 2026-09-20 | gültig       |
 
 ---
 
@@ -394,6 +397,75 @@ Folgenabschätzung nach Art. 35 — ohne Team, das gegenliest.
 **Abgefedert durch die Reihenfolge:** Die Gesundheitsdaten kommen erst in Stufe 9, nach dem
 funktionierenden Buchungskern. Geht vorher die Luft aus, steht trotzdem ein nutzbares
 System.
+
+---
+
+# Werkzeuge und Umgebung
+
+<a id="e-22"></a>
+
+## E-22 · Nest-CLI entfernt, Build mit reinem tsc
+
+**Entscheidung:** Kein `@nestjs/cli`. Gebaut wird mit `tsc -p tsconfig.build.json`,
+entwickelt mit `concurrently` aus `tsc --watch` und Nodes eingebautem `node --watch`.
+
+**Warum:** Der Nest-CLI ist unter Node 22 defekt — er stirbt mit
+`ERR_REQUIRE_CYCLE_MODULE` an einer gebündelten Altlast (`ora` in
+`@angular-devkit/schematics`), sowohl bei `nest new` als auch bei `nest build`. Das
+Skelett ist deshalb von Hand entstanden.
+
+**Nebeneffekt, der die Entscheidung bestätigt hat:** Der CLI und seine Schematics zogen
+**zwei zusätzliche TypeScript-Versionen** in den Abhängigkeitsbaum (6.0.3 und 7.0.2 neben
+5.9.3). Das führte zu Fehlern, die es im Projekt gar nicht gab — etwa `baseUrl has been
+removed`, eine Meldung aus TypeScript 7. Ohne CLI ist überall nur noch 5.9.3 installiert.
+
+**Preis dafür:** Kein `nest generate` für Gerüstcode. Bei der Projektgröße verschmerzbar.
+
+<a id="e-23"></a>
+
+## E-23 · Prisma auf 7.10.0 gepinnt statt Release-Candidate
+
+**Entscheidung:** `prisma` und `@prisma/client` beide exakt auf `7.10.0`, ohne
+`^`-Bereich.
+
+**Warum:** `npm` liefert unter `latest` derzeit `prisma@8.0.0-rc.15` aus — einen
+Release-Candidate — während `@prisma/client@latest` bei stabilen 7.10.0 steht. Ein RC
+gehört nicht in ein System, das Gesundheitsdaten verarbeitet, und die beiden Pakete müssen
+zusammenpassen.
+
+**Bekannte Schwachstellen, bewusst akzeptiert:** `npm audit` meldet vier Einträge mit
+hoher Einstufung. Alle hängen am `prisma`-CLI, einer reinen Entwicklungsabhängigkeit, die
+in Produktion nie läuft. Eine davon betrifft `mysql2` — einen Treiber für eine Datenbank,
+die wir gar nicht verwenden. `@prisma/client`, die einzige Prisma-Abhängigkeit zur
+Laufzeit, ist **nicht** betroffen. Der einzige von npm angebotene Fix wäre ein Downgrade
+auf Prisma 6, was die Paarung mit dem Client zerreißen würde.
+
+**Wiedervorlage:** Sobald Prisma 8 stabil ist, beide Pakete gemeinsam anheben.
+
+<a id="e-24"></a>
+
+## E-24 · PostgreSQL auf Port 5433 statt 5432
+
+**Entscheidung:** Der Container veröffentlicht auf `5433`. Die `DATABASE_URL` verwendet
+`127.0.0.1`, nicht `localhost`.
+
+**Warum der andere Port:** Auf dem Entwicklungsrechner läuft bereits eine native
+PostgreSQL-17-Installation als Windows-Dienst (`postgresql-x64-17`) auf 5432. Verbindungen
+landeten stumm dort statt im Container — mit irreführenden Fehlern: einmal „Rolle
+terminplaner existiert nicht", einmal ein Authentifizierungsfehler. Beides sah nach einem
+Problem mit unseren Zugangsdaten aus, war aber die falsche Datenbank.
+
+**Warum `127.0.0.1` statt `localhost`:** Unter Windows löst `localhost` zuerst auf IPv6
+(`::1`) auf, Docker veröffentlicht Ports aber auf IPv4. Das erzeugt dieselbe Klasse von
+Fehlern — die Verbindung geht irgendwohin, nur nicht in den Container.
+
+**Die bestehende Installation wurde bewusst nicht angefasst.** Sie könnte für anderes
+gebraucht werden; ein zusätzlicher Port kostet nichts.
+
+**Diagnosehilfe für später:** Meldet die Datenbank plötzlich Authentifizierungsfehler,
+zuerst prüfen, ob überhaupt der richtige Server antwortet — von innen mit
+`docker compose exec postgres psql "postgresql://...@127.0.0.1:5432/..."`, von außen mit
+einem direkten Verbindungsversuch auf den veröffentlichten Port.
 
 ---
 
