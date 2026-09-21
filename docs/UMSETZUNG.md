@@ -89,11 +89,27 @@ nicht anlegen.
 ### 6. Nebenläufigkeitstest schreiben
 
 Test: 50 gleichzeitige Buchungsversuche auf denselben Slot, genau einer darf durchkommen.
-Er läuft gegen eine noch nicht existierende Implementierung und ist damit rot.
-**Fertig, wenn:** Der Test existiert, läuft und schlägt fehl.
 
-> Ein absichtlich roter Test wirkt seltsam, ist aber der billigste Weg, sich selbst an die
-> wichtigste Eigenschaft des Systems zu erinnern. Er wird in Schritt 20 grün.
+Dabei kommt das Testframework ins Projekt (Vitest) samt Schutzschalter, der Tests
+abbricht, sobald `DATABASE_URL` nicht auf eine lokale Datenbank zeigt — die Tests legen
+Daten an und löschen sie wieder.
+
+**Fertig, wenn:** Der Test existiert, läuft und beweist, dass von 50 gleichzeitigen
+Einfügungen genau eine durchkommt. Zusätzlich hält ein bewusst als „erwarteter
+Fehlschlag" markierter Test die Anforderung an den Buchungsdienst fest, der erst in
+Schritt 22 entsteht.
+
+> **Korrektur zur ursprünglichen Planung.** Hier stand, der Test solle dauerhaft rot
+> bleiben, bis Schritt 22 ihn grün macht. Das widerspricht Schritt 7, wo ein roter Test
+> den Merge blockieren soll — ein monatelang roter Test würde jede Auslieferung
+> verhindern.
+>
+> Die Auflösung: Der Nachweis auf **Datenbankebene** ist sofort grün und sichert ab, was
+> Schritt 5 gebaut hat. Der Nachweis auf **Dienstebene** ist als erwarteter Fehlschlag
+> markiert. Sobald der Buchungsdienst existiert, schlägt dieser Test _unerwartet ins Grüne
+> um_ und bricht damit den Testlauf — genau an dem Punkt, an dem die echten Zusicherungen
+> geschrieben werden müssen. Ein Wecker, der klingelt, wenn es soweit ist, statt einer
+> Alarmanlage, die monatelang heult.
 
 ### 7. CI-Pipeline
 

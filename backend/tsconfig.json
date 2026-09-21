@@ -23,6 +23,6 @@
     "noUnusedParameters": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "test/**/*", "vitest.config.mts"],
   "exclude": ["node_modules", "dist"]
 }

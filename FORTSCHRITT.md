@@ -26,6 +26,9 @@ dran ist. Die Schrittnummern beziehen sich auf [docs/UMSETZUNG.md](docs/UMSETZUN
       von Hand geschriebene Migration `20260920210224_appointment_overlap_constraint`.
       Dazu acht CHECK-Constraints gegen unsinnige Werte (Ende vor Beginn, negative
       Preise, Wochentag ausserhalb 0–6).
+- [x] **6. Nebenläufigkeitstest** — Vitest ins Projekt geholt, mit SWC für
+      Decorator-Metadaten. 50 gleichzeitige Einfügungen auf denselben Slot, genau eine
+      kommt durch. Schutzschalter bricht ab, sobald `DATABASE_URL` nicht lokal ist.
 
 Geprüfter Stand der Infrastruktur:
 
@@ -66,16 +69,26 @@ Verhalten des Überschneidungsschutzes, gegen die Datenbank geprüft:
 Die drei erlaubten Fälle sind genauso wichtig wie die abgelehnten — ein zu strenger
 Constraint würde den Kalender unbenutzbar machen.
 
+Testlauf (`npm test --workspace @terminplaner/backend`):
+
+| Test                                                 | Ergebnis          |
+| ---------------------------------------------------- | ----------------- |
+| 50 gleichzeitige Einfügungen, genau eine kommt durch | grün              |
+| gleichzeitig bei verschiedenen Kosmetiker:innen      | grün              |
+| Buchungsdienst (Schritt 22)                          | erwarteter Fehler |
+
+Der dritte Test ist als erwarteter Fehlschlag markiert. Sobald der Buchungsdienst
+existiert, schlägt er _unerwartet ins Grüne_ um und bricht den Testlauf — genau dann,
+wenn die echten Zusicherungen geschrieben werden müssen.
+
 ## Als Nächstes
 
-- [ ] **6. Nebenläufigkeitstest schreiben** — bleibt absichtlich rot bis Schritt 22.
-      Dabei kommt auch das Testframework ins Projekt, bisher gibt es keins.
 - [ ] **7. CI-Pipeline** — GitHub Actions: Lint, Test, Build, Migration.
 
 ## Offen, blockiert nichts sofort
 
-- Seit dem letzten Commit (`5d8fb9a`) ist einiges dazugekommen: das ganze `backend/` und
-  die Dokumentationsänderungen. Noch nicht committet.
+- Docker Desktop startet auf diesem Rechner nicht von selbst. Vor dem nächsten Testlauf:
+  in einer Administrator-cmd `net start com.docker.service`, dann Docker Desktop starten.
 - Die alten Repos `terminplaner-backend`, `terminplaner-web-admin`, `terminplaner-mobile`
   und `terminplaner-api-contract` existieren noch auf GitHub und werden nicht gebraucht.
 - `npm audit` meldet vier Einträge mit hoher Einstufung, alle am `prisma`-CLI und damit
