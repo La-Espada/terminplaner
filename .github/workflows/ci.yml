@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Ein laufender Durchlauf wird abgebrochen, wenn neu gepusht wird.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # Schnelle Prüfungen zuerst, ohne Datenbank. Bricht hier etwas, spart das
+  # den teureren Job unten.
+  statisch:
+    name: Lint, Format, Typen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      # Der Prisma-Client wird für die Typprüfung gebraucht, sonst kennt
+      # TypeScript die Modelle nicht.
+      - name: Prisma-Client erzeugen
+        run: npm run prisma:generate --workspace @terminplaner/backend
+        env:
+          DATABASE_URL: postgresql://unused:unused@127.0.0.1:5432/unused
+
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+
+  tests:
+    name: Tests gegen frische Datenbank
+    runs-on: ubuntu-latest
+    needs: statisch
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: terminplaner
+          POSTGRES_PASSWORD: terminplaner_ci
+          POSTGRES_DB: terminplaner
+          TZ: UTC
+          PGTZ: UTC
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U terminplaner"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      # In CI läuft PostgreSQL direkt auf 5432 — der Portkonflikt mit einer nativen
+      # Installation besteht nur auf dem Entwicklungsrechner (siehe E-24).
+      DATABASE_URL: postgresql://terminplaner:terminplaner_ci@127.0.0.1:5432/terminplaner
+      REDIS_URL: redis://127.0.0.1:6379
+      NODE_ENV: test
+      STUDIO_TIMEZONE: Europe/Vienna
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Prisma-Client erzeugen
+        run: npm run prisma:generate --workspace @terminplaner/backend
+
+      # Der eigentliche Wert dieses Schritts: Die Migrationen laufen gegen eine
+      # komplett leere Datenbank. Lokal ist die Datenbank durch viele Läufe
+      # gewandert und würde einen kaputten Migrationspfad nicht auffallen lassen.
+      - name: Migrationen auf leerer Datenbank anwenden
+        run: npx prisma migrate deploy
+        working-directory: backend
+
+      - name: Schema und Migrationshistorie stimmen überein
+        run: npx prisma migrate status
+        working-directory: backend
+
+      - name: Tests
+        run: npm test --workspace @terminplaner/backend
+
+      - run: npm run build --workspace @terminplaner/backend

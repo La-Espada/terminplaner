@@ -29,6 +29,13 @@ dran ist. Die Schrittnummern beziehen sich auf [docs/UMSETZUNG.md](docs/UMSETZUN
 - [x] **6. Nebenläufigkeitstest** — Vitest ins Projekt geholt, mit SWC für
       Decorator-Metadaten. 50 gleichzeitige Einfügungen auf denselben Slot, genau eine
       kommt durch. Schutzschalter bricht ab, sobald `DATABASE_URL` nicht lokal ist.
+- [x] **7. CI-Pipeline** — GitHub Actions in zwei Stufen: erst Lint, Format und Typen
+      ohne Datenbank, dann Migrationen und Tests gegen frisch hochgefahrenes PostgreSQL
+      und Redis. `prisma migrate deploy` läuft dabei gegen eine **leere** Datenbank —
+      lokal ist sie durch viele Läufe gewandert und würde einen kaputten Migrationspfad
+      nicht auffallen lassen.
+
+**Stufe 1 ist damit abgeschlossen.**
 
 Geprüfter Stand der Infrastruktur:
 
@@ -83,7 +90,18 @@ wenn die echten Zusicherungen geschrieben werden müssen.
 
 ## Als Nächstes
 
-- [ ] **7. CI-Pipeline** — GitHub Actions: Lint, Test, Build, Migration.
+**Stufe 2 — Authentifizierung.** Reine Backend-Arbeit, getestet mit einem HTTP-Client.
+
+- [ ] **8. Registrierung** — `users` anlegen, Argon2id, E-Mail-Verifizierung über Mailpit
+- [ ] **9. Login und Token** — JWT 15 min, Refresh 30 Tage mit Rotation
+- [ ] **10. Rollen und Rechte** — Guards plus objektbezogene Prüfung
+- [ ] **11. Einwilligungen** — mit Version und Zeitstempel
+- [ ] **12. Passwort zurücksetzen**
+- [ ] **13. Rate Limiting**
+
+Noch offen aus Schritt 7: **Branch-Schutz auf GitHub** einrichten, damit ein roter
+Durchlauf den Merge tatsächlich blockiert. Das geht nur in den Repository-Einstellungen,
+nicht aus dem Code heraus.
 
 ## Offen, blockiert nichts sofort
 
