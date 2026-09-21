@@ -73,6 +73,17 @@ jobs:
           --health-timeout 3s
           --health-retries 10
 
+      # Die Auth-Tests holen den Verifizierungs-Token aus Mailpit — genau den Weg,
+      # den auch eine echte Kundin nimmt. Ohne diesen Dienst brechen sie ab.
+      mailpit:
+        image: axllent/mailpit:latest
+        ports:
+          - 1025:1025
+          - 8025:8025
+        env:
+          MP_SMTP_AUTH_ACCEPT_ANY: 1
+          MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
     env:
       # In CI läuft PostgreSQL direkt auf 5432 — der Portkonflikt mit einer nativen
       # Installation besteht nur auf dem Entwicklungsrechner (siehe E-24).
@@ -80,6 +91,13 @@ jobs:
       REDIS_URL: redis://127.0.0.1:6379
       NODE_ENV: test
       STUDIO_TIMEZONE: Europe/Vienna
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: 1025
+      MAIL_FROM: 'Terminplaner CI <noreply@example.invalid>'
+      APP_BASE_URL: http://localhost:3000
+      JWT_ACCESS_SECRET: nur-fuer-ci-kein-echtes-geheimnis-aaaaaaaaaaaa
+      JWT_REFRESH_SECRET: nur-fuer-ci-kein-echtes-geheimnis-bbbbbbbbbbbb
+      HEALTH_DATA_ENCRYPTION_KEY: nur-fuer-ci-kein-echtes-geheimnis-cccccccccccc
 
     steps:
       - uses: actions/checkout@v4

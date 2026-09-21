@@ -37,6 +37,16 @@ dran ist. Die Schrittnummern beziehen sich auf [docs/UMSETZUNG.md](docs/UMSETZUN
 
 **Stufe 1 ist damit abgeschlossen.**
 
+### Stufe 2 — Authentifizierung
+
+- [x] **8. Registrierung** — Argon2id mit OWASP-Parametern, E-Mail-Verifizierung über
+      Einmal-Token, Einwilligungen mit Version protokolliert. Der Endpunkt verrät nicht,
+      ob eine Adresse bereits vergeben ist.
+
+Dabei kam eine Lücke im Datenmodell ans Licht: Es gab `users.emailVerifiedAt`, aber
+keinen Ort für den Token selbst. Neue Tabelle `auth_tokens`, Migration
+`20260921213958_auth_tokens`. Gespeichert wird nur der SHA-256-Hash.
+
 Geprüfter Stand der Infrastruktur:
 
 | Dienst     | Stand                                                                     |
@@ -92,7 +102,6 @@ wenn die echten Zusicherungen geschrieben werden müssen.
 
 **Stufe 2 — Authentifizierung.** Reine Backend-Arbeit, getestet mit einem HTTP-Client.
 
-- [ ] **8. Registrierung** — `users` anlegen, Argon2id, E-Mail-Verifizierung über Mailpit
 - [ ] **9. Login und Token** — JWT 15 min, Refresh 30 Tage mit Rotation
 - [ ] **10. Rollen und Rechte** — Guards plus objektbezogene Prüfung
 - [ ] **11. Einwilligungen** — mit Version und Zeitstempel

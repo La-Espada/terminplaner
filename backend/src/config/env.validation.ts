@@ -11,6 +11,10 @@ export const envValidationSchema = Joi.object({
   PORT: Joi.number().port().default(3000),
   API_PREFIX: Joi.string().default('api/v1'),
 
+  // Basis-URL für Links in E-Mails (Verifizierung, Passwort-Reset).
+  // In Produktion die öffentliche Adresse der App, nicht die des Backends.
+  APP_BASE_URL: Joi.string().uri().default('http://localhost:3000'),
+
   DATABASE_URL: Joi.string()
     .uri({ scheme: ['postgresql', 'postgres'] })
     .required(),

@@ -69,6 +69,7 @@ model User {
   consents      Consent[]
   auditEntries  AuditLogEntry[]
   refreshTokens RefreshToken[]
+  authTokens    AuthToken[]
   deviceTokens  DeviceToken[]
   notifications NotificationOutbox[]
 
@@ -90,6 +91,38 @@ model RefreshToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+enum AuthTokenPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+
+  @@map("auth_token_purpose")
+}
+
+/// Einmal-Token für E-Mail-Verifizierung und Passwort-Reset.
+///
+/// Diese Tabelle fehlte im ursprünglichen Datenmodell — `users.emailVerifiedAt` gab es,
+/// aber keinen Ort für den Token selbst. Aufgefallen beim Bau von Schritt 8.
+///
+/// Gespeichert wird **nur der SHA-256-Hash** des Tokens, nie der Klartext. Ein
+/// Datenbankabzug erlaubt damit nicht, fremde Konten zu übernehmen oder Passwörter
+/// zurückzusetzen. Der Klartext existiert genau einmal: im Link in der E-Mail.
+model AuthToken {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  purpose   AuthTokenPurpose
+  tokenHash String           @unique @map("token_hash")
+  expiresAt DateTime         @map("expires_at") @db.Timestamptz(3)
+  /// Gesetzt beim Einlösen. Ein Token wirkt genau einmal.
+  usedAt    DateTime?        @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
+  @@map("auth_tokens")
 }
 
 enum DevicePlatform {
