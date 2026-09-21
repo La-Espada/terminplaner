@@ -9,6 +9,17 @@ Stand: 2026-09-20
 
 ## Rechtliches und Datenschutz
 
+> **Offen und wichtig:** Der Auftraggeber ist das **Dermazentrum Siebenhirten**, eine
+> Arztpraxis (Dermatologie und Ästhetik), nicht ein Kosmetikstudio. Die bisherige
+> DSGVO-Planung geht von einem Kosmetikbetrieb aus. Eine Arztpraxis unterliegt zusätzlich
+> der **ärztlichen Verschwiegenheitspflicht** (§ 54 Ärztegesetz), führt
+> Patientendokumentation mit eigenen Aufbewahrungsfristen, und Gesundheitsdaten sind dort
+> nicht ein Randfall, sondern der Kern. Bewusst zurückgestellt, muss aber **vor Stufe 9**
+> (Behandlungsnotizen) geklärt sein.
+
+- [ ] Klären, welche Anforderungen aus dem Ärztegesetz zusätzlich gelten und ob die
+      Behandlungsnotizen Teil der Patientendokumentation werden
+
 - [ ] Verantwortliche Stelle im Sinne der DSGVO benennen (wer genau, mit Anschrift)
 - [ ] Klären, ob ein Datenschutzbeauftragter bestellt werden muss
 - [ ] Verarbeitungsverzeichnis nach Art. 30 anlegen

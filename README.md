@@ -27,6 +27,7 @@ Alles TypeScript. Die generierten Typen aus `api-contract/` werden von `web-admi
 | [docs/UMSETZUNG.md](docs/UMSETZUNG.md)           | **In welcher Reihenfolge**: 56 Schritte in elf Stufen                |
 | [docs/CHECKLISTE.md](docs/CHECKLISTE.md)         | **Was noch offen ist** außerhalb des Codes: Recht, Verträge, Konten  |
 | [FORTSCHRITT.md](FORTSCHRITT.md)                 | **Wo wir stehen**: erledigte Schritte, nächster dran                 |
+| [docs/DESIGN.md](docs/DESIGN.md)                 | Farben, Schrift, Formen — abgeleitet von der Website des Studios     |
 | [docs/datenmodell.puml](docs/datenmodell.puml)   | ERD als PlantUML                                                     |
 | [docs/HANDOFF.md](docs/HANDOFF.md)               | Kontext-Übergabe für neue Arbeitssitzungen                           |
 
