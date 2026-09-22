@@ -47,6 +47,7 @@ export default function Registrieren() {
   const [email, setEmail] = useState('');
   const [telefon, setTelefon] = useState('');
   const [passwort, setPasswort] = useState('');
+  const [passwortWdh, setPasswortWdh] = useState('');
 
   // Einwilligungen sind bewusst NICHT vorangekreuzt (Art. 7 Abs. 2 DSGVO).
   const [agb, setAgb] = useState(false);
@@ -58,11 +59,22 @@ export default function Registrieren() {
   const [fertig, setFertig] = useState(false);
   const [laedt, setLaedt] = useState(false);
 
+  const passwoerterGleich = passwort === passwortWdh;
+
+  // Der Hinweis erscheint erst, wenn im zweiten Feld etwas steht. Sonst meckert
+  // das Formular schon beim ersten Zeichen, obwohl noch gar nichts falsch ist.
+  const wdhFehler =
+    passwortWdh.length > 0 && !passwoerterGleich
+      ? 'Die Passwörter stimmen nicht überein.'
+      : undefined;
+
   const pflichtErfuellt =
     vorname.trim() !== '' &&
     nachname.trim() !== '' &&
     email.trim() !== '' &&
     passwort.length >= 12 &&
+    passwortWdh.length > 0 &&
+    passwoerterGleich &&
     agb &&
     datenschutz;
 
@@ -82,6 +94,10 @@ export default function Registrieren() {
         acceptedPrivacy: datenschutz,
         acceptedMarketing: marketing,
       });
+      // Passwörter nicht im Zustand liegen lassen, nachdem sie nicht mehr
+      // gebraucht werden.
+      setPasswort('');
+      setPasswortWdh('');
       setFertig(true);
     } catch (e) {
       if (e instanceof ApiFehler) {
@@ -187,6 +203,16 @@ export default function Registrieren() {
             Mindestens 12 Zeichen. Eine Wortfolge, die Sie sich merken können, ist sicherer als ein
             kurzes Passwort mit Sonderzeichen.
           </Text>
+
+          <Feld
+            beschriftung="Passwort wiederholen"
+            value={passwortWdh}
+            onChangeText={setPasswortWdh}
+            placeholder="Passwort erneut eingeben"
+            istPasswort
+            autoComplete="new-password"
+            fehler={wdhFehler}
+          />
 
           <View style={stile.einwilligungen}>
             <Haken an={agb} onToggle={() => setAgb((v) => !v)}>

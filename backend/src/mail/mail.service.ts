@@ -20,13 +20,24 @@ export class MailService {
 
   constructor(private readonly config: ConfigService) {
     this.absender = this.config.get<string>('MAIL_FROM', 'noreply@example.invalid');
+    const benutzer = this.config.get<string>('SMTP_USER', '');
+    const passwort = this.config.get<string>('SMTP_PASSWORD', '');
+    const mitAnmeldung = benutzer !== '' && passwort !== '';
+
     this.transporter = createTransport({
       host: this.config.get<string>('SMTP_HOST', 'localhost'),
       port: this.config.get<number>('SMTP_PORT', 1025),
       secure: this.config.get<string>('SMTP_SECURE', 'false') === 'true',
-      // Mailpit nimmt alles ohne Anmeldung entgegen.
-      ignoreTLS: this.config.get<string>('NODE_ENV') !== 'production',
+      // Mailpit nimmt lokal alles ohne Anmeldung entgegen. Echte Anbieter
+      // verlangen Zugangsdaten — sind sie gesetzt, werden sie verwendet.
+      ...(mitAnmeldung ? { auth: { user: benutzer, pass: passwort } } : { ignoreTLS: true }),
     });
+
+    this.logger.log(
+      mitAnmeldung
+        ? `Mailversand über ${this.config.get<string>('SMTP_HOST')} mit Anmeldung`
+        : 'Mailversand ohne Anmeldung (lokal, Mailpit)',
+    );
   }
 
   private async send(an: string, betreff: string, text: string, html: string): Promise<void> {

@@ -19,6 +19,15 @@ export const envValidationSchema = Joi.object({
   // Leer bedeutet: keine fremde Herkunft erlaubt.
   CORS_ORIGINS: Joi.string().allow('').default(''),
 
+  // Mailversand. Ohne SMTP_USER/SMTP_PASSWORD wird ohne Anmeldung versendet,
+  // was nur lokal gegen Mailpit funktioniert.
+  SMTP_HOST: Joi.string().default('localhost'),
+  SMTP_PORT: Joi.number().port().default(1025),
+  SMTP_SECURE: Joi.boolean().default(false),
+  SMTP_USER: Joi.string().allow('').default(''),
+  SMTP_PASSWORD: Joi.string().allow('').default(''),
+  MAIL_FROM: Joi.string().default('noreply@example.invalid'),
+
   DATABASE_URL: Joi.string()
     .uri({ scheme: ['postgresql', 'postgres'] })
     .required(),
