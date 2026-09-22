@@ -12,6 +12,26 @@ async function bootstrap(): Promise<void> {
 
   app.use(helmet());
 
+  // Browser-Clients brauchen eine ausdrückliche Freigabe: das Admin-Web und die
+  // Expo-App, wenn sie im Browser läuft. Native Builds der App sind davon nicht
+  // betroffen, dort gibt es keine Herkunftsprüfung.
+  //
+  // Bewusst eine Positivliste statt `origin: true`. Mit Anmeldedaten im Spiel
+  // (httpOnly-Cookie im Admin-Web) wäre eine offene Freigabe eine Einladung:
+  // Jede fremde Seite könnte im Namen angemeldeter Nutzender Anfragen stellen.
+  const erlaubteHerkuenfte = config
+    .get<string>('CORS_ORIGINS', '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter((o) => o.length > 0);
+
+  app.enableCors({
+    origin: erlaubteHerkuenfte.length > 0 ? erlaubteHerkuenfte : false,
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    maxAge: 600,
+  });
+
   const apiPrefix = config.get<string>('API_PREFIX', 'api/v1');
   app.setGlobalPrefix(apiPrefix);
 

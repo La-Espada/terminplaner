@@ -15,6 +15,10 @@ export const envValidationSchema = Joi.object({
   // In Produktion die öffentliche Adresse der App, nicht die des Backends.
   APP_BASE_URL: Joi.string().uri().default('http://localhost:3000'),
 
+  // Kommagetrennte Liste erlaubter Herkünfte für Browser-Clients.
+  // Leer bedeutet: keine fremde Herkunft erlaubt.
+  CORS_ORIGINS: Joi.string().allow('').default(''),
+
   DATABASE_URL: Joi.string()
     .uri({ scheme: ['postgresql', 'postgres'] })
     .required(),

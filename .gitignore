@@ -54,3 +54,7 @@ desktop.ini
 
 # Docker-Volumes, falls lokal gemountet
 docker-data/
+
+# Expo
+.expo/
+expo-env.d.ts

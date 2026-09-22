@@ -30,4 +30,12 @@ export default tseslint.config(
       eqeqeq: ['error', 'always', { null: 'ignore' }],
     },
   },
+  {
+    // React Native löst Schriften und Bilder über Metro auf, und das geht nur
+    // mit require(). Ein import würde den Pfad nicht als Asset erkennen.
+    files: ['mobile/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
 );
