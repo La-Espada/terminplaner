@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthTokenPurpose, ConsentType, Prisma } from '@prisma/client';
 import { MailService } from '../mail/mail.service';
@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthTokenService } from './auth-token.service';
 import type { RegisterDto } from './dto/register.dto';
 import { PasswordService } from './password.service';
+import { TokenService, type TokenPaar } from './token.service';
 
 /** Gültigkeit des Verifizierungslinks. */
 const VERIFIZIERUNG_GUELTIG_MINUTEN = 24 * 60;
@@ -19,6 +20,13 @@ const VERIFIZIERUNG_GUELTIG_MINUTEN = 24 * 60;
  */
 const EINWILLIGUNG_VERSION = '1.0';
 
+/**
+ * Argon2id-Hash eines zufälligen Werts. Wird geprüft, wenn es die Adresse nicht
+ * gibt, damit die Antwortzeit keinen Rückschluss zulässt.
+ */
+const BLIND_HASH =
+  '$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHR2YWx1ZQ$AJoTB1Zx9F7gGGDKBsM/1Yw+7uSVsCLkDh6fGkULxEo';
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -28,6 +36,7 @@ export class AuthService {
     private readonly passwords: PasswordService,
     private readonly tokens: AuthTokenService,
     private readonly mail: MailService,
+    private readonly sitzungen: TokenService,
     private readonly config: ConfigService,
   ) {}
 
@@ -112,6 +121,49 @@ export class AuthService {
     });
 
     this.logger.log('E-Mail-Adresse bestätigt');
+  }
+
+  /**
+   * Anmeldung.
+   *
+   * Falsches Passwort und unbekannte Adresse liefern **dieselbe** Antwort. Sonst
+   * verrät der Login, was die Registrierung in Schritt 8 gerade verbirgt: wer
+   * hier Patientin ist.
+   *
+   * Auch bei unbekannter Adresse wird ein Hash geprüft. Ohne diesen Leerlauf
+   * antwortet der Server messbar schneller, wenn es die Adresse nicht gibt —
+   * und die Auskunft wäre über die Antwortzeit wieder zu haben.
+   */
+  async login(email: string, passwort: string): Promise<TokenPaar> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, passwordHash: true, role: true, status: true, emailVerifiedAt: true },
+    });
+
+    const stimmt = user
+      ? await this.passwords.verifyPassword(user.passwordHash, passwort)
+      : await this.passwords.verifyPassword(BLIND_HASH, passwort);
+
+    if (!user || !stimmt) {
+      throw new UnauthorizedException('E-Mail-Adresse oder Passwort ist falsch.');
+    }
+
+    if (user.status !== 'ACTIVE') {
+      // Gesperrt oder anonymisiert. Bewusst dieselbe Meldung.
+      this.logger.warn('Anmeldeversuch auf nicht aktivem Konto');
+      throw new UnauthorizedException('E-Mail-Adresse oder Passwort ist falsch.');
+    }
+
+    if (user.emailVerifiedAt === null) {
+      // Hier ist eine eigene Meldung richtig: Die Person kennt ihr Passwort,
+      // es gibt also nichts mehr zu verbergen, und sie braucht die Anleitung.
+      throw new UnauthorizedException(
+        'Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse über den Link in der Anmeldemail.',
+      );
+    }
+
+    this.logger.log(`Anmeldung erfolgreich, Rolle ${user.role}`);
+    return this.sitzungen.issuePair(user.id, user.role);
   }
 
   private consent(userId: string, type: ConsentType, granted: boolean) {

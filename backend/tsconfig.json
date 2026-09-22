@@ -23,6 +23,6 @@
     "noUnusedParameters": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*", "test/**/*", "vitest.config.mts"],
+  "include": ["src/**/*", "test/**/*", "prisma/*.ts", "vitest.config.mts"],
   "exclude": ["node_modules", "dist"]
 }

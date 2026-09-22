@@ -42,6 +42,14 @@ dran ist. Die Schrittnummern beziehen sich auf [docs/UMSETZUNG.md](docs/UMSETZUN
 - [x] **8. Registrierung** — Argon2id mit OWASP-Parametern, E-Mail-Verifizierung über
       Einmal-Token, Einwilligungen mit Version protokolliert. Der Endpunkt verrät nicht,
       ob eine Adresse bereits vergeben ist.
+- [x] **9. Login und Token** — JWT 15 Minuten, Refresh 30 Tage mit Rotation und
+      Diebstahlerkennung. Falsches Passwort und unbekannte Adresse sind nicht
+      unterscheidbar. Refresh-Token als httpOnly-Cookie fürs Web, im Rumpf für die App.
+- [x] **Admin-Konto** — `npm run seed:admin --workspace @terminplaner/backend`. Das erste
+      Konto lässt sich nicht über die Registrierung erzeugen, dort wird jeder zur Kundin.
+- [x] **Admin-Web mit Anmeldung** — Vite und React, Design-Tokens aus `docs/DESIGN.md`,
+      Poppins lokal. Der Access-Token liegt nur im Speicher; nach dem Neuladen wird die
+      Sitzung über das Cookie fortgesetzt. (Vorgezogen aus Stufe 3.)
 
 Dabei kam eine Lücke im Datenmodell ans Licht: Es gab `users.emailVerifiedAt`, aber
 keinen Ort für den Token selbst. Neue Tabelle `auth_tokens`, Migration
@@ -102,7 +110,6 @@ wenn die echten Zusicherungen geschrieben werden müssen.
 
 **Stufe 2 — Authentifizierung.** Reine Backend-Arbeit, getestet mit einem HTTP-Client.
 
-- [ ] **9. Login und Token** — JWT 15 min, Refresh 30 Tage mit Rotation
 - [ ] **10. Rollen und Rechte** — Guards plus objektbezogene Prüfung
 - [ ] **11. Einwilligungen** — mit Version und Zeitstempel
 - [ ] **12. Passwort zurücksetzen**

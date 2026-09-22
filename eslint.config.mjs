@@ -31,6 +31,14 @@ export default tseslint.config(
     },
   },
   {
+    // Das Seed-Skript ist ein Kommandozeilenwerkzeug. Seine Ausgabe auf der
+    // Konsole ist der Zweck, nicht ein vergessenes Debug-Statement.
+    files: ['backend/prisma/seed.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
     // React Native löst Schriften und Bilder über Metro auf, und das geht nur
     // mit require(). Ein import würde den Pfad nicht als Asset erkennen.
     files: ['mobile/**/*.{ts,tsx}'],

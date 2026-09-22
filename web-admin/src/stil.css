@@ -1,0 +1,225 @@
+/*
+ * Design-Tokens des Dermazentrums.
+ * Quelle: docs/DESIGN.md. Änderungen bitte dort zuerst.
+ */
+
+/* Poppins lokal, nicht vom Google-CDN — das wäre ein vermeidbarer
+   Drittlandtransfer. Siehe assets/fonts/poppins/README.md. */
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/Poppins-300-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC;
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/Poppins-400-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC;
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/Poppins-500-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC;
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/Poppins-600-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC;
+}
+
+:root {
+  --gold: #c2a05a;
+  --gold-hell: #dcb96e;
+  /* Gold als Schriftfarbe: Das volle Gold erreicht auf Weiß nur 2,48:1 und
+     fällt durch WCAG AA. Diese Variante schafft 5,04:1 bei gleichem Ton. */
+  --gold-text: #846c2e;
+
+  --tinte: #161614;
+  --tinte-weich: #1f1f1d;
+  --tinte-sanft: #2a2a27;
+
+  --weiss: #ffffff;
+  --creme: #fdfbf7;
+  --creme-tief: #f3ede1;
+
+  --grau-700: #6f6f69;
+  --grau-500: #a3a39d;
+  --grau-300: #c9c9c5;
+  --grau-100: #e7e7e5;
+
+  --fehler: #a8323c;
+  --fehler-flaeche: #fdf2f3;
+
+  --radius-knopf: 8px;
+  --radius-karte: 16px;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Poppins, ui-sans-serif, system-ui, sans-serif;
+  background: var(--creme);
+  color: var(--tinte-weich);
+  -webkit-font-smoothing: antialiased;
+}
+
+.mitte {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.marke {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.marke__name {
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--tinte);
+}
+.marke__zusatz {
+  font-weight: 300;
+  font-size: 15px;
+  letter-spacing: 4px;
+  color: var(--gold-text);
+}
+
+.karte {
+  background: var(--weiss);
+  border: 1px solid var(--creme-tief);
+  border-radius: var(--radius-karte);
+  padding: 32px;
+  width: 100%;
+  max-width: 420px;
+}
+
+h1 {
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 600;
+  color: var(--tinte);
+  margin: 0 0 4px;
+}
+
+.untertitel {
+  color: var(--grau-700);
+  font-size: 16px;
+  margin: 0 0 24px;
+}
+
+.feld {
+  margin-bottom: 16px;
+}
+.feld label {
+  display: block;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--tinte-sanft);
+  margin-bottom: 4px;
+}
+.feld input {
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 16px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--tinte-weich);
+  background: var(--weiss);
+  border: 1px solid var(--grau-300);
+  border-radius: var(--radius-knopf);
+}
+.feld input:focus-visible {
+  outline: 2px solid var(--gold-text);
+  outline-offset: 1px;
+  border-color: var(--gold-text);
+}
+.feld input[aria-invalid='true'] {
+  border-color: var(--fehler);
+  background: var(--fehler-flaeche);
+}
+
+.knopf {
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 24px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--weiss);
+  background: var(--tinte);
+  border: none;
+  border-radius: var(--radius-knopf);
+  cursor: pointer;
+}
+.knopf:hover:not(:disabled) {
+  background: var(--tinte-sanft);
+}
+.knopf:focus-visible {
+  outline: 2px solid var(--gold-text);
+  outline-offset: 2px;
+}
+.knopf:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* Goldener Knopf trägt dunkle Schrift: 7,31:1. Weiß wären 2,48:1. */
+.knopf--gold {
+  background: var(--gold);
+  color: var(--tinte);
+}
+.knopf--gold:hover:not(:disabled) {
+  background: var(--gold-hell);
+}
+
+.meldung {
+  border-radius: var(--radius-knopf);
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.45;
+  margin-bottom: 16px;
+  border-left: 3px solid var(--gold);
+  background: var(--creme);
+  color: var(--tinte-sanft);
+}
+.meldung--fehler {
+  border-left-color: var(--fehler);
+  background: var(--fehler-flaeche);
+  color: var(--fehler);
+}
+
+.hinweis {
+  font-size: 13px;
+  color: var(--grau-700);
+  text-align: center;
+  margin-top: 24px;
+}
+
+.wartet {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  color: var(--grau-700);
+}

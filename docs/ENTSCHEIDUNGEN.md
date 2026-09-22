@@ -39,6 +39,8 @@ gültig, dreh sie um — aber trag die Änderung hier ein, mit Datum.
 | [E-22](#e-22) | Nest-CLI entfernt, Build mit reinem tsc              | 2026-09-20 | gültig       |
 | [E-23](#e-23) | Prisma auf 7.10.0 gepinnt statt Release-Candidate    | 2026-09-20 | gültig       |
 | [E-24](#e-24) | PostgreSQL auf Port 5433 statt 5432                  | 2026-09-20 | gültig       |
+| [E-25](#e-25) | Nachfrist bei der Token-Rotation                     | 2026-09-23 | gültig       |
+| [E-26](#e-26) | Admin-Web spricht `localhost`, nicht `127.0.0.1`     | 2026-09-23 | gültig       |
 
 ---
 
@@ -466,6 +468,54 @@ gebraucht werden; ein zusätzlicher Port kostet nichts.
 zuerst prüfen, ob überhaupt der richtige Server antwortet — von innen mit
 `docker compose exec postgres psql "postgresql://...@127.0.0.1:5432/..."`, von außen mit
 einem direkten Verbindungsversuch auf den veröffentlichten Port.
+
+---
+
+<a id="e-25"></a>
+
+## E-25 · Nachfrist bei der Token-Rotation
+
+**Entscheidung:** Wird ein bereits rotierter Refresh-Token innerhalb von **15
+Sekunden** erneut vorgelegt, gibt es ein neues Paar statt einer Entwertung. Danach gilt
+Diebstahlverdacht und die ganze Familie fliegt raus.
+
+**Warum:** Ohne die Frist löst jede harmlose Doppelanfrage die Diebstahlerkennung aus —
+zwei offene Tabs, ein Wiederholungsversuch nach Netzwerkabbruch, oder React im
+Entwicklungsmodus, das Effekte doppelt ausführt. Genau das ist beim Bau des Admin-Webs
+passiert: Die Sitzung überlebte kein Neuladen, obwohl niemand etwas gestohlen hatte.
+
+**Der Haken, der beim ersten Versuch übersehen wurde:** Bei einer Familienentwertung sind
+_alle_ Token frisch widerrufen. Sie fielen damit ebenfalls in die Nachfrist und bekamen
+ein neues Paar — die Entwertung war wirkungslos. Der eigene Test hat das aufgedeckt.
+
+**Die Lösung:** Eine Spalte `revoked_reason` (`ROTATED`, `LOGOUT`, `COMPROMISED`). Die
+Nachfrist greift **nur** nach normaler Rotation. Bei einer Entwertung werden auch bereits
+rotierte Token auf `COMPROMISED` umgeschrieben, damit keiner von ihnen die Sitzung über
+die Nachfrist wiederbeleben kann.
+
+**Preis dafür:** Ein gestohlener Token wirkt bis zu 15 Sekunden nach der legitimen
+Rotation. Vertretbar gegenüber Sitzungen, die grundlos abbrechen.
+
+**Zusätzlich im Client:** Parallele Erneuerungen werden zusammengelegt, damit unnötige
+Rotationen gar nicht erst entstehen.
+
+<a id="e-26"></a>
+
+## E-26 · Admin-Web spricht `localhost`, nicht `127.0.0.1`
+
+**Entscheidung:** Das Admin-Web ruft die API unter `http://localhost:3000` auf, obwohl die
+Datenbankverbindung aus gutem Grund `127.0.0.1` verwendet (E-24).
+
+**Warum:** Browser behandeln `localhost` und `127.0.0.1` als **verschiedene Sites**. Das
+Refresh-Cookie ist `SameSite=Lax` und wurde bei einem Wechsel von `localhost:5173` nach
+`127.0.0.1:3000` nicht mitgeschickt — die Sitzung überlebte kein Neuladen. Unterschiedliche
+**Ports** sind dagegen unproblematisch, `localhost:5173` und `localhost:3000` gelten als
+dieselbe Site.
+
+**Merkhilfe für später:** Für die _Datenbank_ ist `127.0.0.1` richtig, weil Windows
+`localhost` zuerst auf IPv6 auflöst und Docker auf IPv4 veröffentlicht. Für den _Browser_
+ist `localhost` richtig, wegen SameSite. Beide Regeln gelten gleichzeitig und
+widersprechen sich nur scheinbar.
 
 ---
 

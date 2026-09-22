@@ -123,6 +123,13 @@ jobs:
         run: npx prisma migrate status
         working-directory: backend
 
+      # Prueft, dass das Admin-Konto sich anlegen laesst — ohne das kaeme
+      # niemand ins Admin-Web hinein.
+      - name: Seed-Skript
+        run: npm run seed:admin --workspace @terminplaner/backend
+        env:
+          ADMIN_PASSWORD: nur-fuer-ci-ein-langes-passwort
+
       - name: Tests
         run: npm test --workspace @terminplaner/backend
 
