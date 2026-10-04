@@ -13,6 +13,8 @@ import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { Oeffentlich } from './decorators/oeffentlich.decorator';
 import { LoginDto } from './dto/login.dto';
+import { PasswortVergessenDto } from './dto/passwort-vergessen.dto';
+import { PasswortZuruecksetzenDto } from './dto/passwort-zuruecksetzen.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { TokenService } from './token.service';
@@ -57,6 +59,32 @@ export class AuthController {
       message:
         'Wenn die Adresse verwendet werden kann, haben wir eine E-Mail zur Bestätigung geschickt.',
     };
+  }
+
+  /**
+   * Passwort-Reset anfordern.
+   *
+   * Antwortet immer mit 202 und derselben Nachricht, auch bei unbekannter
+   * Adresse. Dieser Endpunkt braucht keine Anmeldedaten und waere sonst das
+   * bequemste Verzeichnis, das die Praxis haben kann.
+   */
+  @Oeffentlich()
+  @Post('password/forgot')
+  @HttpCode(HttpStatus.ACCEPTED)
+  async passwortVergessen(@Body() dto: PasswortVergessenDto): Promise<Quittung> {
+    await this.auth.anfordernPasswortReset(dto.email);
+    return {
+      message:
+        'Wenn ein Konto mit dieser Adresse existiert, haben wir einen Link zum Zuruecksetzen geschickt.',
+    };
+  }
+
+  @Oeffentlich()
+  @Post('password/reset')
+  @HttpCode(HttpStatus.OK)
+  async passwortZuruecksetzen(@Body() dto: PasswortZuruecksetzenDto): Promise<Quittung> {
+    await this.auth.zuruecksetzenPasswort(dto.token, dto.password);
+    return { message: 'Passwort geaendert. Bitte melden Sie sich neu an.' };
   }
 
   @Oeffentlich()

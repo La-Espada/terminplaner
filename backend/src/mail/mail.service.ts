@@ -94,6 +94,33 @@ export class MailService {
 
     await this.send(an, betreff, text, html);
   }
+
+  /**
+   * Benachrichtigung nach einer Passwortänderung.
+   *
+   * Geht an die bekannte Adresse, damit ein unbefugter Reset auffällt. Enthält
+   * bewusst keinen Link zum Rückgängigmachen — das wäre selbst wieder ein
+   * Angriffsweg.
+   */
+  async sendPasswordChangedMail(an: string, vorname: string): Promise<void> {
+    const betreff = 'Ihr Passwort wurde geändert';
+    const text = [
+      `Guten Tag ${vorname},`,
+      '',
+      'das Passwort Ihres Kontos wurde soeben geändert. Alle bestehenden Anmeldungen',
+      'wurden dabei beendet.',
+      '',
+      'Waren Sie das nicht, melden Sie sich bitte umgehend bei uns.',
+    ].join('\n');
+
+    const html = `
+      <p>Guten Tag ${escapeHtml(vorname)},</p>
+      <p>das Passwort Ihres Kontos wurde soeben geändert. Alle bestehenden Anmeldungen
+      wurden dabei beendet.</p>
+      <p><strong>Waren Sie das nicht, melden Sie sich bitte umgehend bei uns.</strong></p>`;
+
+    await this.send(an, betreff, text, html);
+  }
 }
 
 function escapeHtml(s: string): string {

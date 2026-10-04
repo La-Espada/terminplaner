@@ -13,6 +13,13 @@ import { TokenService, type TokenPaar } from './token.service';
 const VERIFIZIERUNG_GUELTIG_MINUTEN = 24 * 60;
 
 /**
+ * Gültigkeit des Reset-Links. Deutlich kürzer als bei der Verifizierung: Der
+ * Link kann ein Konto übernehmen, also soll er nicht tagelang in einem
+ * Postfach herumliegen.
+ */
+const RESET_GUELTIG_MINUTEN = 60;
+
+/**
  * Argon2id-Hash eines zufälligen Werts. Wird geprüft, wenn es die Adresse nicht
  * gibt, damit die Antwortzeit keinen Rückschluss zulässt.
  */
@@ -158,6 +165,77 @@ export class AuthService {
     return this.sitzungen.issuePair(user.id, user.role);
   }
 
+  /**
+   * Passwort-Reset anfordern.
+   *
+   * Antwortet **immer gleich**, egal ob es die Adresse gibt. Andernfalls wäre
+   * dieser Endpunkt das Verzeichnis, das Registrierung und Login gerade
+   * verbergen — und zwar ein besonders bequemes, weil er keine Anmeldedaten
+   * braucht.
+   *
+   * Gesperrte und anonymisierte Konten bekommen keinen Link. Ein anonymisiertes
+   * Konto hat ohnehin keine gültige Adresse mehr.
+   */
+  async anfordernPasswortReset(email: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, firstName: true, email: true, status: true },
+    });
+
+    if (user === null || user.status !== 'ACTIVE') {
+      // Bewusst ohne Adresse im Log.
+      this.logger.log('Passwort-Reset für unbekanntes oder inaktives Konto angefordert');
+      return;
+    }
+
+    const klartext = await this.tokens.issue(
+      user.id,
+      AuthTokenPurpose.PASSWORD_RESET,
+      RESET_GUELTIG_MINUTEN,
+    );
+
+    await this.mail.sendPasswordResetMail(user.email, user.firstName, this.resetLink(klartext));
+    this.logger.log('Passwort-Reset angefordert');
+  }
+
+  /**
+   * Neues Passwort setzen.
+   *
+   * Danach werden **alle** Sitzungen entwertet, nicht nur die aktuelle. Wer sein
+   * Passwort zurücksetzt, tut das häufig, weil er einen Zugriff befürchtet —
+   * dann muss auch eine bereits gestohlene Sitzung sterben.
+   */
+  async zuruecksetzenPasswort(token: string, neuesPasswort: string): Promise<void> {
+    const userId = await this.tokens.redeem(token, AuthTokenPurpose.PASSWORD_RESET);
+
+    if (userId === null) {
+      throw new BadRequestException('Der Link ist ungültig oder abgelaufen.');
+    }
+
+    const passwordHash = await this.passwords.hashPassword(neuesPasswort);
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash,
+        // Wer den Link aus dem Postfach geholt hat, hat damit bewiesen, dass die
+        // Adresse ihm gehört. Ein unbestätigtes Konto gilt danach als bestätigt —
+        // sonst säße jemand fest, der sich registriert, die Bestätigungsmail
+        // verpasst und das Passwort vergessen hat.
+        emailVerifiedAt: new Date(),
+      },
+      select: { id: true, email: true, firstName: true },
+    });
+
+    await this.sitzungen.revokeAll(user.id);
+
+    // Benachrichtigung an die bekannte Adresse. War der Reset nicht gewollt,
+    // erfährt die rechtmäßige Inhaberin davon.
+    await this.mail.sendPasswordChangedMail(user.email, user.firstName);
+
+    this.logger.log('Passwort zurückgesetzt, alle Sitzungen entwertet');
+  }
+
   private consent(userId: string, type: ConsentType, granted: boolean) {
     return {
       userId,
@@ -166,6 +244,11 @@ export class AuthService {
       granted,
       grantedAt: new Date(),
     };
+  }
+
+  private resetLink(token: string): string {
+    const basis = this.config.get<string>('APP_BASE_URL', 'http://localhost:3000');
+    return `${basis}/passwort-neu?token=${encodeURIComponent(token)}`;
   }
 
   private verifyLink(token: string): string {
