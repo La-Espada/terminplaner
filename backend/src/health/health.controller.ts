@@ -1,5 +1,6 @@
 import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Oeffentlich } from '../auth/decorators/oeffentlich.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface HealthResponse {
@@ -24,6 +25,7 @@ export class HealthController {
    * Bewusst ohne personenbezogene Daten und ohne Versionsangaben — der Endpunkt
    * ist öffentlich und soll einem Angreifer nichts über das System verraten.
    */
+  @Oeffentlich()
   @Get()
   @HttpCode(HttpStatus.OK)
   async check(): Promise<HealthResponse> {

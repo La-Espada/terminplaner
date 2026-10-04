@@ -47,6 +47,10 @@ dran ist. Die Schrittnummern beziehen sich auf [docs/UMSETZUNG.md](docs/UMSETZUN
       unterscheidbar. Refresh-Token als httpOnly-Cookie fürs Web, im Rumpf für die App.
 - [x] **Admin-Konto** — `npm run seed:admin --workspace @terminplaner/backend`. Das erste
       Konto lässt sich nicht über die Registrierung erzeugen, dort wird jeder zur Kundin.
+- [x] **10. Rollen und Rechte** — `JwtAuthGuard` global, Endpunkte damit
+      standardmäßig geschützt. `RollenGuard` für die grobe Stufe, `ZugriffService` für
+      die objektbezogene: Eine Kosmetikerin kommt nicht an die Termine und Hautbefunde
+      einer Kollegin, obwohl beide Rolle `STAFF` haben.
 - [x] **Admin-Web mit Anmeldung** — Vite und React, Design-Tokens aus `docs/DESIGN.md`,
       Poppins lokal. Der Access-Token liegt nur im Speicher; nach dem Neuladen wird die
       Sitzung über das Cookie fortgesetzt. (Vorgezogen aus Stufe 3.)
@@ -110,7 +114,6 @@ wenn die echten Zusicherungen geschrieben werden müssen.
 
 **Stufe 2 — Authentifizierung.** Reine Backend-Arbeit, getestet mit einem HTTP-Client.
 
-- [ ] **10. Rollen und Rechte** — Guards plus objektbezogene Prüfung
 - [ ] **11. Einwilligungen** — mit Version und Zeitstempel
 - [ ] **12. Passwort zurücksetzen**
 - [ ] **13. Rate Limiting**
@@ -138,6 +141,9 @@ Damit sie nicht zweimal Zeit kosten — ausführlich in `docs/ENTSCHEIDUNGEN.md`
   `127.0.0.1` statt `localhost`, weil Windows sonst auf IPv6 auflöst. Siehe E-24.
 - **Docker Desktop braucht Adminrechte** zum Start: in einer Administrator-cmd
   `net start com.docker.service`, dann Docker Desktop normal starten.
+- **Tests leeren die Datenbank.** `truncateAll` räumt alle Tabellen ab, also auch das
+  Admin-Konto. Nach jedem Testlauf neu anlegen:
+  `ADMIN_PASSWORD=... npm run seed:admin --workspace @terminplaner/backend`
 - **Niemals `taskkill /IM node.exe`** — Docker Desktop läuft selbst auf Node und wird
   dabei mit beendet. Prozesse gezielt über ihre PID beenden.
 

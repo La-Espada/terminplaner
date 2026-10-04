@@ -11,6 +11,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
+import { Oeffentlich } from './decorators/oeffentlich.decorator';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -47,6 +48,7 @@ export class AuthController {
    * Antwortet immer mit 202 und derselben Nachricht — auch wenn die Adresse
    * bereits vergeben ist. Der Endpunkt darf nicht verraten, wer hier Kundin ist.
    */
+  @Oeffentlich()
   @Post('register')
   @HttpCode(HttpStatus.ACCEPTED)
   async register(@Body() dto: RegisterDto): Promise<Quittung> {
@@ -57,6 +59,7 @@ export class AuthController {
     };
   }
 
+  @Oeffentlich()
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   async verifyEmail(@Body() dto: VerifyEmailDto): Promise<Quittung> {
@@ -64,6 +67,7 @@ export class AuthController {
     return { message: 'E-Mail-Adresse bestätigt.' };
   }
 
+  @Oeffentlich()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
@@ -83,6 +87,7 @@ export class AuthController {
    * Neues Token-Paar. Der Refresh-Token kommt aus dem Cookie (Admin-Web) oder
    * aus dem Rumpf (Mobile-App).
    */
+  @Oeffentlich()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(
@@ -110,6 +115,14 @@ export class AuthController {
     };
   }
 
+  /**
+   * Abmeldung.
+   *
+   * Bewusst oeffentlich: Ist der Access-Token abgelaufen, kaeme man sonst nicht
+   * mehr heraus — der Refresh-Token bliebe bis zu 30 Tage gueltig. Entwertet
+   * wird ohnehin nur ein Token, den der Aufrufer bereits besitzt.
+   */
+  @Oeffentlich()
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(

@@ -41,6 +41,7 @@ gültig, dreh sie um — aber trag die Änderung hier ein, mit Datum.
 | [E-24](#e-24) | PostgreSQL auf Port 5433 statt 5432                  | 2026-09-20 | gültig       |
 | [E-25](#e-25) | Nachfrist bei der Token-Rotation                     | 2026-09-23 | gültig       |
 | [E-26](#e-26) | Admin-Web spricht `localhost`, nicht `127.0.0.1`     | 2026-09-23 | gültig       |
+| [E-27](#e-27) | Endpunkte sind standardmäßig geschützt               | 2026-10-04 | gültig       |
 
 ---
 
@@ -516,6 +517,41 @@ dieselbe Site.
 `localhost` zuerst auf IPv6 auflöst und Docker auf IPv4 veröffentlicht. Für den _Browser_
 ist `localhost` richtig, wegen SameSite. Beide Regeln gelten gleichzeitig und
 widersprechen sich nur scheinbar.
+
+---
+
+<a id="e-27"></a>
+
+## E-27 · Endpunkte sind standardmäßig geschützt
+
+**Entscheidung:** Der `JwtAuthGuard` ist **global** registriert. Jeder Endpunkt verlangt
+eine Anmeldung, sofern er nicht ausdrücklich mit `@Oeffentlich()` markiert ist.
+
+**Warum diese Richtung:** Bei der umgekehrten Voreinstellung — alles offen, Schutz wird
+angefordert — ist ein vergessener Guard ein Datenleck, und man sieht es dem Code nicht an.
+Fehlt umgekehrt die Markierung, bekommt man einen 401 und merkt es sofort. Der
+unaufmerksame Fall soll der sichere sein.
+
+**Öffentlich sind nur fünf Endpunkte,** jeder mit Begründung im Code: Registrierung,
+E-Mail-Verifizierung, Login, Refresh und Logout. Logout ist bewusst dabei — wäre er
+geschützt, käme niemand mehr heraus, dessen Access-Token abgelaufen ist, und der
+Refresh-Token bliebe bis zu 30 Tage gültig.
+
+**Der Guard schaut bei jeder Anfrage in die Datenbank.** Ein gültiges JWT allein genügt
+nicht: Zwischen Ausgabe und Verwendung liegen bis zu 15 Minuten, und in der Zeit kann ein
+Konto gesperrt oder anonymisiert worden sein. Das kostet eine Abfrage je Anfrage — bei
+einer Praxis mit einer Handvoll gleichzeitiger Nutzender ist das kein Thema, und die
+Alternative wäre, dass eine Sperrung eine Viertelstunde lang wirkungslos bleibt.
+
+**Zwei Ebenen, die nicht verwechselt werden dürfen:** Der Guard beantwortet „darf diese
+Rolle hierher". Der `ZugriffService` beantwortet „darf diese Person auf _dieses_ Objekt
+zugreifen". Nur die zweite verhindert, dass eine Kosmetikerin die Termine und Hautbefunde
+einer Kollegin liest — beides mit derselben Rolle `STAFF`.
+
+**Bei fremden Objekten melden wir „nicht gefunden", nicht „verboten".** Ein 403 auf eine
+fremde Termin-ID bestätigt, dass sie existiert; über durchprobierte IDs ließe sich
+ermitteln, wie ausgelastet die Praxis ist. Bei der Behandlungshistorie ist 403 dagegen
+richtig, weil die Kundin dort ohnehin bekannt ist.
 
 ---
 
