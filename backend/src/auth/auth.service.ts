@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthTokenPurpose, ConsentType, Prisma } from '@prisma/client';
+import { aktuelleVersion } from '../consents/consent-katalog';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthTokenService } from './auth-token.service';
@@ -10,15 +11,6 @@ import { TokenService, type TokenPaar } from './token.service';
 
 /** Gültigkeit des Verifizierungslinks. */
 const VERIFIZIERUNG_GUELTIG_MINUTEN = 24 * 60;
-
-/**
- * Fassung der Einwilligungstexte, der zugestimmt wurde.
- *
- * Ändert sich der Text von AGB oder Datenschutzerklärung, wird diese Nummer
- * erhöht und die Einwilligung neu eingeholt. Ohne ein Archiv der Fassungen ist
- * die Nummer wertlos — siehe docs/CHECKLISTE.md.
- */
-const EINWILLIGUNG_VERSION = '1.0';
 
 /**
  * Argon2id-Hash eines zufälligen Werts. Wird geprüft, wenn es die Adresse nicht
@@ -170,7 +162,7 @@ export class AuthService {
     return {
       userId,
       type,
-      version: EINWILLIGUNG_VERSION,
+      version: aktuelleVersion(type),
       granted,
       grantedAt: new Date(),
     };

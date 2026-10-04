@@ -51,6 +51,10 @@ dran ist. Die Schrittnummern beziehen sich auf [docs/UMSETZUNG.md](docs/UMSETZUN
       standardmäßig geschützt. `RollenGuard` für die grobe Stufe, `ZugriffService` für
       die objektbezogene: Eine Kosmetikerin kommt nicht an die Termine und Hautbefunde
       einer Kollegin, obwohl beide Rolle `STAFF` haben.
+- [x] **11. Einwilligungen** — `GET` und `PATCH /me/consents`. Die Tabelle ist ein
+      Protokoll, kein Zustand: Ein Widerruf löscht nichts, sondern hängt eine Zeile an.
+      Pflicht-Einwilligungen (AGB, Datenschutz) lassen sich nicht einzeln widerrufen —
+      das wäre eine Kontolöschung. Veraltete Textfassungen gelten nicht mehr als erteilt.
 - [x] **Admin-Web mit Anmeldung** — Vite und React, Design-Tokens aus `docs/DESIGN.md`,
       Poppins lokal. Der Access-Token liegt nur im Speicher; nach dem Neuladen wird die
       Sitzung über das Cookie fortgesetzt. (Vorgezogen aus Stufe 3.)
@@ -114,7 +118,6 @@ wenn die echten Zusicherungen geschrieben werden müssen.
 
 **Stufe 2 — Authentifizierung.** Reine Backend-Arbeit, getestet mit einem HTTP-Client.
 
-- [ ] **11. Einwilligungen** — mit Version und Zeitstempel
 - [ ] **12. Passwort zurücksetzen**
 - [ ] **13. Rate Limiting**
 

@@ -31,8 +31,11 @@ Stand: 2026-09-20
 - [ ] AGB erstellen (inkl. Storno-Bedingungen)
 - [ ] Einwilligungstexte formulieren — getrennt für AGB, Datenschutz, Gesundheitsdaten,
       Marketing, Push
-- [ ] Versionierung der Einwilligungstexte festlegen: Wo werden alte Fassungen archiviert?
-      Ohne Archiv lässt sich nicht nachweisen, wozu Version 1.2 eigentlich eingewilligt hat
+- [ ] **Archiv der Einwilligungstexte anlegen.** Die Versionsnummern werden seit Schritt 11
+      sauber mitgeschrieben (`backend/src/consents/consent-katalog.ts`, aktuell alle `1.0`),
+      aber die zugehörigen **Texte** sind nirgends abgelegt. Ohne Archiv lässt sich nicht
+      belegen, wozu „Version 1.0" eigentlich eingewilligt hat — die Nummer allein ist
+      wertlos. Vor dem Livegang nötig.
 - [ ] TOM-Dokumentation erstellen (technische und organisatorische Maßnahmen)
 - [ ] Meldeprozess für Datenpannen festlegen (72 Stunden, Art. 33) — wer meldet, an wen,
       wie wird es dokumentiert
