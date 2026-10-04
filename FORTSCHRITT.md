@@ -58,6 +58,12 @@ dran ist. Die Schrittnummern beziehen sich auf [docs/UMSETZUNG.md](docs/UMSETZUN
 - [x] **12. Passwort zurücksetzen** — Link per Mail, 60 Minuten gültig, wirkt genau
       einmal. Das Zurücksetzen entwertet **alle** Sitzungen und benachrichtigt die
       bekannte Adresse. Der Endpunkt verrät nicht, ob eine Adresse bekannt ist.
+- [x] **13. Rate Limiting** — Zähler in Redis, nach IP **und** Konto. Fünf
+      Anmeldeversuche je 15 Minuten, drei mailauslösende Anfragen je Stunde. Fällt Redis
+      aus, wird durchgelassen statt abgewiesen — sonst stünde die Anmeldung still.
+
+**Stufe 2 ist damit abgeschlossen.**
+
 - [x] **Admin-Web mit Anmeldung** — Vite und React, Design-Tokens aus `docs/DESIGN.md`,
       Poppins lokal. Der Access-Token liegt nur im Speicher; nach dem Neuladen wird die
       Sitzung über das Cookie fortgesetzt. (Vorgezogen aus Stufe 3.)
@@ -121,8 +127,6 @@ wenn die echten Zusicherungen geschrieben werden müssen.
 
 **Stufe 2 — Authentifizierung.** Reine Backend-Arbeit, getestet mit einem HTTP-Client.
 
-- [ ] **13. Rate Limiting**
-
 Noch offen aus Schritt 7: **Branch-Schutz auf GitHub** einrichten, damit ein roter
 Durchlauf den Merge tatsächlich blockiert. Das geht nur in den Repository-Einstellungen,
 nicht aus dem Code heraus.
@@ -146,6 +150,9 @@ Damit sie nicht zweimal Zeit kosten — ausführlich in `docs/ENTSCHEIDUNGEN.md`
   `127.0.0.1` statt `localhost`, weil Windows sonst auf IPv6 auflöst. Siehe E-24.
 - **Docker Desktop braucht Adminrechte** zum Start: in einer Administrator-cmd
   `net start com.docker.service`, dann Docker Desktop normal starten.
+- **Grenzen in Tests nicht über Umgebungsvariablen setzen.** Zwischen `test/setup.ts`
+  und der Testdatei ist die Reihenfolge nicht verlässlich. Wer eigene Grenzen braucht,
+  überschreibt den Options-Provider im Testmodul — siehe `anfragebegrenzung.spec.ts`.
 - **Tests leeren die Datenbank.** `truncateAll` räumt alle Tabellen ab, also auch das
   Admin-Konto. Nach jedem Testlauf neu anlegen:
   `ADMIN_PASSWORD=... npm run seed:admin --workspace @terminplaner/backend`

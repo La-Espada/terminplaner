@@ -98,6 +98,12 @@ jobs:
       JWT_ACCESS_SECRET: nur-fuer-ci-kein-echtes-geheimnis-aaaaaaaaaaaa
       JWT_REFRESH_SECRET: nur-fuer-ci-kein-echtes-geheimnis-bbbbbbbbbbbb
       HEALTH_DATA_ENCRYPTION_KEY: nur-fuer-ci-kein-echtes-geheimnis-cccccccccccc
+      # In der CI laufen viele Anmeldeversuche hintereinander. Die Begrenzung
+      # wird dort hochgesetzt; ihr Verhalten pruefen eigene Tests, die den Wert
+      # selbst vorgeben.
+      RATE_LIMIT_STANDARD: 10000
+      RATE_LIMIT_ANMELDUNG: 10000
+      RATE_LIMIT_MAIL: 10000
 
     steps:
       - uses: actions/checkout@v4

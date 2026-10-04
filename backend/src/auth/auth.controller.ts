@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  UseGuards,
   HttpCode,
   HttpStatus,
   Post,
@@ -9,8 +10,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SkipThrottle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
+import { AuthThrottlerGuard } from '../throttling/auth-throttler.guard';
 import { Oeffentlich } from './decorators/oeffentlich.decorator';
 import { LoginDto } from './dto/login.dto';
 import { PasswortVergessenDto } from './dto/passwort-vergessen.dto';
@@ -36,6 +39,7 @@ interface AnmeldeAntwort {
 /** Name des Cookies mit dem Refresh-Token. */
 const REFRESH_COOKIE = 'terminplaner_refresh';
 
+@UseGuards(AuthThrottlerGuard)
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -50,6 +54,7 @@ export class AuthController {
    * Antwortet immer mit 202 und derselben Nachricht — auch wenn die Adresse
    * bereits vergeben ist. Der Endpunkt darf nicht verraten, wer hier Kundin ist.
    */
+  @SkipThrottle({ standard: true, streng: true })
   @Oeffentlich()
   @Post('register')
   @HttpCode(HttpStatus.ACCEPTED)
@@ -68,6 +73,8 @@ export class AuthController {
    * Adresse. Dieser Endpunkt braucht keine Anmeldedaten und waere sonst das
    * bequemste Verzeichnis, das die Praxis haben kann.
    */
+  // Loest eine Mail aus: die Stundengrenze, damit niemand ein fremdes Postfach flutet.
+  @SkipThrottle({ standard: true, streng: true })
   @Oeffentlich()
   @Post('password/forgot')
   @HttpCode(HttpStatus.ACCEPTED)
@@ -79,6 +86,7 @@ export class AuthController {
     };
   }
 
+  @SkipThrottle({ standard: true, mail: true })
   @Oeffentlich()
   @Post('password/reset')
   @HttpCode(HttpStatus.OK)
@@ -87,6 +95,7 @@ export class AuthController {
     return { message: 'Passwort geaendert. Bitte melden Sie sich neu an.' };
   }
 
+  @SkipThrottle({ standard: true, mail: true })
   @Oeffentlich()
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
@@ -95,6 +104,8 @@ export class AuthController {
     return { message: 'E-Mail-Adresse bestätigt.' };
   }
 
+  // Nur die strenge Grenze: fuenf Versuche je 15 Minuten, Werte aus der Konfiguration.
+  @SkipThrottle({ standard: true, mail: true })
   @Oeffentlich()
   @Post('login')
   @HttpCode(HttpStatus.OK)

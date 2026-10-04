@@ -11,6 +11,16 @@ async function bootstrap(): Promise<void> {
   const config = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
 
+  // Hinter einem Reverse-Proxy steht in req.ip sonst die Adresse des Proxys —
+  // dann zaehlt die Anfragebegrenzung alle Nutzenden als eine Person, und fuenf
+  // Fehlversuche sperren das ganze Studio aus. Der Wert sagt, wie vielen
+  // Proxys vor der Anwendung zu trauen ist.
+  const proxyTiefe = config.get<number>('TRUST_PROXY_HOPS', 0);
+  if (proxyTiefe > 0) {
+    app.getHttpAdapter().getInstance().set('trust proxy', proxyTiefe);
+    logger.log(`Vertraue ${proxyTiefe} Proxy-Schicht(en) fuer die Ermittlung der IP`);
+  }
+
   app.use(helmet());
   app.use(cookieParser());
 

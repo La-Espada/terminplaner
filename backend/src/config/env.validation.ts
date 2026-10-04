@@ -19,6 +19,19 @@ export const envValidationSchema = Joi.object({
   // Leer bedeutet: keine fremde Herkunft erlaubt.
   CORS_ORIGINS: Joi.string().allow('').default(''),
 
+  // --- Anfragebegrenzung, siehe src/throttling/throttling.module.ts ---
+  // Anfragen je Minute auf die uebrige API.
+  // Anzahl vertrauenswuerdiger Proxys vor der Anwendung. 0 = direkt erreichbar.
+  // In Produktion hinter nginx oder einem Load Balancer auf 1 setzen, sonst
+  // sieht die Anfragebegrenzung nur die Proxy-Adresse.
+  TRUST_PROXY_HOPS: Joi.number().integer().min(0).max(5).default(0),
+
+  RATE_LIMIT_STANDARD: Joi.number().integer().min(1).default(120),
+  // Anmeldeversuche je 15 Minuten, gezaehlt nach IP UND Konto.
+  RATE_LIMIT_ANMELDUNG: Joi.number().integer().min(1).default(5),
+  // Mailauslösende Anfragen je Stunde (Registrierung, Passwort vergessen).
+  RATE_LIMIT_MAIL: Joi.number().integer().min(1).default(3),
+
   // Mailversand. Ohne SMTP_USER/SMTP_PASSWORD wird ohne Anmeldung versendet,
   // was nur lokal gegen Mailpit funktioniert.
   SMTP_HOST: Joi.string().default('localhost'),

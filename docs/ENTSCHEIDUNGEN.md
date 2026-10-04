@@ -42,6 +42,7 @@ gültig, dreh sie um — aber trag die Änderung hier ein, mit Datum.
 | [E-25](#e-25) | Nachfrist bei der Token-Rotation                     | 2026-09-23 | gültig       |
 | [E-26](#e-26) | Admin-Web spricht `localhost`, nicht `127.0.0.1`     | 2026-09-23 | gültig       |
 | [E-27](#e-27) | Endpunkte sind standardmäßig geschützt               | 2026-10-04 | gültig       |
+| [E-28](#e-28) | Anfragebegrenzung zählt nach IP **und** Konto        | 2026-10-04 | gültig       |
 
 ---
 
@@ -552,6 +553,45 @@ einer Kollegin liest — beides mit derselben Rolle `STAFF`.
 fremde Termin-ID bestätigt, dass sie existiert; über durchprobierte IDs ließe sich
 ermitteln, wie ausgelastet die Praxis ist. Bei der Behandlungshistorie ist 403 dagegen
 richtig, weil die Kundin dort ohnehin bekannt ist.
+
+---
+
+<a id="e-28"></a>
+
+## E-28 · Anfragebegrenzung zählt nach IP **und** Konto
+
+**Entscheidung:** Der Zähler läuft auf der Kombination aus IP-Adresse und der angegebenen
+E-Mail-Adresse, nicht auf einer von beiden allein. Die Zähler liegen in Redis.
+
+**Warum nicht nur nach IP:** Hinter einem gemeinsamen Anschluss — Praxis-WLAN,
+Mobilfunk-NAT — teilen sich viele Leute eine Adresse. Fünf Fehlversuche einer Person
+sperrten alle anderen mit aus.
+
+**Warum nicht nur nach Konto:** Wer eine fremde Adresse kennt, könnte sie durch
+absichtliche Fehlversuche dauerhaft aussperren. Die Begrenzung würde zur Waffe gegen die
+rechtmäßige Inhaberin. Ein Test hält fest, dass eine gesperrte Adresse eine andere vom
+selben Anschluss nicht behindert.
+
+**Zwei Grenzen, verschiedene Gefahren:** `streng` schützt die Anmeldung gegen
+Durchprobieren (fünf je 15 Minuten). `mail` schützt Registrierung und Passwort-Reset
+dagegen, dass jemand ein fremdes Postfach flutet (drei je Stunde) — dort ist nicht das
+Raten das Problem.
+
+**Der Schlüssel ist gehasht.** Redis-Schlüssel tauchen in Protokollen und Werkzeugen auf;
+dort gehört keine Patientenadresse hin. Ein Test prüft, dass im Zählerspeicher kein `@`
+vorkommt.
+
+**Fällt Redis aus, wird durchgelassen, nicht abgewiesen.** Sonst stünde die gesamte
+Anmeldung still und das Studio käme nicht an seinen Kalender. Ein Ausfall der Begrenzung
+ist das kleinere Übel als ein Ausfall des Systems — aber er wird laut protokolliert.
+
+**Der Zählerspeicher ist selbst geschrieben.** Die fertigen Redis-Pakete unterstützen
+NestJS nur bis Version 11, wir sind auf 12. Die Schnittstelle besteht aus einer Methode,
+und so lässt sich das Verhalten bei Redis-Ausfall selbst bestimmen.
+
+**Hinter einem Reverse-Proxy ist `TRUST_PROXY_HOPS` zu setzen.** Sonst steht in `req.ip`
+die Adresse des Proxys, die Begrenzung zählt alle Nutzenden als eine Person, und fünf
+Fehlversuche sperren das ganze Studio aus. In der Entwicklung steht der Wert auf 0.
 
 ---
 
