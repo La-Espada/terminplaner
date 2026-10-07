@@ -7,7 +7,9 @@ import { NichtGefunden } from './routen/NichtGefunden';
 import { Platzhalter } from './routen/Platzhalter';
 import { NurAbgemeldet, NurAngemeldet, NurRollen } from './routen/Schutz';
 import { Anmeldung } from './seiten/Anmeldung';
+import { Einladung } from './seiten/Einladung';
 import { Leistungen } from './seiten/Leistungen';
+import { Team } from './seiten/Team';
 import { Uebersicht } from './seiten/Uebersicht';
 
 const abfragen = new QueryClient({
@@ -32,12 +34,18 @@ export function App() {
               <Route path="/anmelden" element={<Anmeldung />} />
             </Route>
 
+            {/* Weder angemeldet noch abgemeldet: Hier zaehlt der Token aus der
+                E-Mail. Haengt dieser Pfad unter NurAbgemeldet, faengt eine
+                fremde Sitzung im selben Browser die Einladung ab. */}
+            <Route path="/einladung" element={<Einladung />} />
+
             <Route element={<NurAngemeldet />}>
               <Route element={<Rahmen />}>
                 <Route index element={<Uebersicht />} />
 
                 <Route element={<NurRollen rollen={['ADMIN']} />}>
                   <Route path="/leistungen" element={<Leistungen />} />
+                  <Route path="/team" element={<Team />} />
                 </Route>
 
                 {/* Platzhalter für alles, was noch entsteht. Die Rollen hier

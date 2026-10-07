@@ -7,6 +7,7 @@ import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ServicesModule } from './services/services.module';
+import { StaffModule } from './staff/staff.module';
 import { ThrottlingModule } from './throttling/throttling.module';
 import { UsersModule } from './users/users.module';
 
@@ -26,6 +27,7 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     ConsentsModule,
     ServicesModule,
+    StaffModule,
     HealthModule,
   ],
 })

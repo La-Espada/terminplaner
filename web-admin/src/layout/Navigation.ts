@@ -25,7 +25,7 @@ export const MENUE: readonly MenuPunkt[] = [
   { pfad: '/kalender', titel: 'Kalender', kommtNoch: true },
   { pfad: '/termine', titel: 'Termine', kommtNoch: true },
   { pfad: '/leistungen', titel: 'Leistungen', rollen: ['ADMIN'] },
-  { pfad: '/team', titel: 'Kosmetiker:innen', rollen: ['ADMIN'], kommtNoch: true },
+  { pfad: '/team', titel: 'Kosmetiker:innen', rollen: ['ADMIN'] },
   { pfad: '/arbeitszeiten', titel: 'Arbeitszeiten', kommtNoch: true },
   { pfad: '/kundinnen', titel: 'Kundinnen', kommtNoch: true },
   { pfad: '/auswertung', titel: 'Auswertung', rollen: ['ADMIN'], kommtNoch: true },

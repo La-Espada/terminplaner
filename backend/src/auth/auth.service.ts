@@ -236,6 +236,40 @@ export class AuthService {
     this.logger.log('Passwort zurückgesetzt, alle Sitzungen entwertet');
   }
 
+  /**
+   * Einladung einloesen: erstes Passwort fuer ein vom Studio angelegtes Konto.
+   *
+   * Technisch fast ein Passwort-Reset, mit zwei Unterschieden. Erstens faellt
+   * die Mail "Ihr Passwort wurde geaendert" weg — es wurde nichts geaendert,
+   * sondern erstmals vergeben, und eine Warnmeldung zum eigenen Klick
+   * verunsichert nur. Zweitens wird das Konto dabei freigeschaltet: Wer den
+   * Link aus seinem Postfach geholt hat, hat die Adresse bewiesen.
+   */
+  async einloesenEinladung(token: string, passwort: string): Promise<void> {
+    const userId = await this.tokens.redeem(token, AuthTokenPurpose.INVITATION);
+
+    if (userId === null) {
+      throw new BadRequestException(
+        'Diese Einladung ist ungueltig oder abgelaufen. Bitte lassen Sie sich eine neue schicken.',
+      );
+    }
+
+    const passwordHash = await this.passwords.hashPassword(passwort);
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash, emailVerifiedAt: new Date(), status: 'ACTIVE' },
+      select: { id: true },
+    });
+
+    // Es sollte gar keine Sitzung geben — bis hierher konnte sich niemand
+    // anmelden. Der Aufruf kostet nichts und schliesst den Fall aus, dass eine
+    // zweite Einladung ein zwischenzeitlich uebernommenes Konto offen laesst.
+    await this.sitzungen.revokeAll(user.id);
+
+    this.logger.log('Einladung eingeloest, Passwort vergeben');
+  }
+
   private consent(userId: string, type: ConsentType, granted: boolean) {
     return {
       userId,

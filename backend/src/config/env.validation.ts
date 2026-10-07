@@ -14,6 +14,8 @@ export const envValidationSchema = Joi.object({
   // Basis-URL für Links in E-Mails (Verifizierung, Passwort-Reset).
   // In Produktion die öffentliche Adresse der App, nicht die des Backends.
   APP_BASE_URL: Joi.string().uri().default('http://localhost:3000'),
+  // Basis fuer Links, die im Admin-Web landen sollen (Einladung ans Personal).
+  ADMIN_BASE_URL: Joi.string().uri().default('http://localhost:5173'),
 
   // Kommagetrennte Liste erlaubter Herkünfte für Browser-Clients.
   // Leer bedeutet: keine fremde Herkunft erlaubt.

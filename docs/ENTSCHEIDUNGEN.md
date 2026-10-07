@@ -13,37 +13,38 @@ gültig, dreh sie um — aber trag die Änderung hier ein, mit Datum.
 
 ## Überblick
 
-| Nr.           | Entscheidung                                         | Datum      | Status       |
-| ------------- | ---------------------------------------------------- | ---------- | ------------ |
-| [E-01](#e-01) | Ein gemeinsames Backend für alle Clients             | 2026-09-08 | gültig       |
-| [E-02](#e-02) | NestJS + PostgreSQL, EU-Hosting statt Firebase       | 2026-09-08 | gültig       |
-| [E-03](#e-03) | React Native mit Expo statt zwei nativer Apps        | 2026-09-17 | **geändert** |
-| [E-04](#e-04) | Monorepo statt vier getrennter Repositories          | 2026-09-20 | **geändert** |
-| [E-05](#e-05) | Admin-Web vor der Mobile-App bauen                   | 2026-09-17 | gültig       |
-| [E-06](#e-06) | Zeitstempel durchgängig `timestamptz` in UTC         | 2026-09-08 | gültig       |
-| [E-07](#e-07) | Überschneidungsschutz in der Datenbank               | 2026-09-08 | gültig       |
-| [E-08](#e-08) | Geldbeträge als Cent-Integer                         | 2026-09-08 | gültig       |
-| [E-09](#e-09) | Preis beim Buchen einfrieren                         | 2026-09-08 | gültig       |
-| [E-10](#e-10) | `staff_services` als reine Verknüpfung               | 2026-09-20 | **geändert** |
-| [E-11](#e-11) | `working_hours` wiederkehrend, `time_off` einmalig   | 2026-09-20 | gültig       |
-| [E-12](#e-12) | `time_off` ohne Freitextfeld                         | 2026-09-20 | gültig       |
-| [E-13](#e-13) | Behandlungsnotizen als eigene verschlüsselte Tabelle | 2026-09-08 | gültig       |
-| [E-14](#e-14) | Kundennotiz wie Art.-9-Daten behandeln               | 2026-09-20 | gültig       |
-| [E-15](#e-15) | Kein Soft-Delete, nur Anonymisierung                 | 2026-09-20 | gültig       |
-| [E-16](#e-16) | Audit-Log ohne Inhalte                               | 2026-09-20 | gültig       |
-| [E-17](#e-17) | Push nicht über den Expo-Dienst                      | 2026-09-17 | gültig       |
-| [E-18](#e-18) | Push-Nachrichten ohne Klardaten                      | 2026-09-08 | gültig       |
-| [E-19](#e-19) | Backups täglich, 30 Tage flach                       | 2026-09-20 | gültig       |
-| [E-20](#e-20) | Buchungsregeln als Konfiguration, nicht als Code     | 2026-09-17 | gültig       |
-| [E-21](#e-21) | Gesundheitsdaten bleiben in Version 1                | 2026-09-17 | gültig       |
-| [E-22](#e-22) | Nest-CLI entfernt, Build mit reinem tsc              | 2026-09-20 | gültig       |
-| [E-23](#e-23) | Prisma auf 7.10.0 gepinnt statt Release-Candidate    | 2026-09-20 | gültig       |
-| [E-24](#e-24) | PostgreSQL auf Port 5433 statt 5432                  | 2026-09-20 | gültig       |
-| [E-25](#e-25) | Nachfrist bei der Token-Rotation                     | 2026-09-23 | gültig       |
-| [E-26](#e-26) | Admin-Web spricht `localhost`, nicht `127.0.0.1`     | 2026-09-23 | gültig       |
-| [E-27](#e-27) | Endpunkte sind standardmäßig geschützt               | 2026-10-04 | gültig       |
-| [E-28](#e-28) | Anfragebegrenzung zählt nach IP **und** Konto        | 2026-10-04 | gültig       |
-| [E-29](#e-29) | Tailwind jetzt, shadcn/ui später                     | 2026-10-07 | gültig       |
+| Nr.           | Entscheidung                                          | Datum      | Status       |
+| ------------- | ----------------------------------------------------- | ---------- | ------------ |
+| [E-01](#e-01) | Ein gemeinsames Backend für alle Clients              | 2026-09-08 | gültig       |
+| [E-02](#e-02) | NestJS + PostgreSQL, EU-Hosting statt Firebase        | 2026-09-08 | gültig       |
+| [E-03](#e-03) | React Native mit Expo statt zwei nativer Apps         | 2026-09-17 | **geändert** |
+| [E-04](#e-04) | Monorepo statt vier getrennter Repositories           | 2026-09-20 | **geändert** |
+| [E-05](#e-05) | Admin-Web vor der Mobile-App bauen                    | 2026-09-17 | gültig       |
+| [E-06](#e-06) | Zeitstempel durchgängig `timestamptz` in UTC          | 2026-09-08 | gültig       |
+| [E-07](#e-07) | Überschneidungsschutz in der Datenbank                | 2026-09-08 | gültig       |
+| [E-08](#e-08) | Geldbeträge als Cent-Integer                          | 2026-09-08 | gültig       |
+| [E-09](#e-09) | Preis beim Buchen einfrieren                          | 2026-09-08 | gültig       |
+| [E-10](#e-10) | `staff_services` als reine Verknüpfung                | 2026-09-20 | **geändert** |
+| [E-11](#e-11) | `working_hours` wiederkehrend, `time_off` einmalig    | 2026-09-20 | gültig       |
+| [E-12](#e-12) | `time_off` ohne Freitextfeld                          | 2026-09-20 | gültig       |
+| [E-13](#e-13) | Behandlungsnotizen als eigene verschlüsselte Tabelle  | 2026-09-08 | gültig       |
+| [E-14](#e-14) | Kundennotiz wie Art.-9-Daten behandeln                | 2026-09-20 | gültig       |
+| [E-15](#e-15) | Kein Soft-Delete, nur Anonymisierung                  | 2026-09-20 | gültig       |
+| [E-16](#e-16) | Audit-Log ohne Inhalte                                | 2026-09-20 | gültig       |
+| [E-17](#e-17) | Push nicht über den Expo-Dienst                       | 2026-09-17 | gültig       |
+| [E-18](#e-18) | Push-Nachrichten ohne Klardaten                       | 2026-09-08 | gültig       |
+| [E-19](#e-19) | Backups täglich, 30 Tage flach                        | 2026-09-20 | gültig       |
+| [E-20](#e-20) | Buchungsregeln als Konfiguration, nicht als Code      | 2026-09-17 | gültig       |
+| [E-21](#e-21) | Gesundheitsdaten bleiben in Version 1                 | 2026-09-17 | gültig       |
+| [E-22](#e-22) | Nest-CLI entfernt, Build mit reinem tsc               | 2026-09-20 | gültig       |
+| [E-23](#e-23) | Prisma auf 7.10.0 gepinnt statt Release-Candidate     | 2026-09-20 | gültig       |
+| [E-24](#e-24) | PostgreSQL auf Port 5433 statt 5432                   | 2026-09-20 | gültig       |
+| [E-25](#e-25) | Nachfrist bei der Token-Rotation                      | 2026-09-23 | gültig       |
+| [E-26](#e-26) | Admin-Web spricht `localhost`, nicht `127.0.0.1`      | 2026-09-23 | gültig       |
+| [E-27](#e-27) | Endpunkte sind standardmäßig geschützt                | 2026-10-04 | gültig       |
+| [E-28](#e-28) | Anfragebegrenzung zählt nach IP **und** Konto         | 2026-10-04 | gültig       |
+| [E-29](#e-29) | Tailwind jetzt, shadcn/ui später                      | 2026-10-07 | gültig       |
+| [E-30](#e-30) | Personal wird eingeladen, nicht mit Passwort angelegt | 2026-10-07 | gültig       |
 
 ---
 
@@ -618,6 +619,45 @@ Drag & Drop (Schritt 26). Dort lohnt es sich sofort.
 
 **Woran man merkt, dass die Entscheidung falsch war:** Wenn in `stil.css` eigene Dialoge
 oder Auswahlfelder auftauchen. Dann wurde nachgebaut, was es fertig gibt.
+
+---
+
+## E-30
+
+### Personal wird eingeladen, nicht mit Passwort angelegt
+
+**Datum:** 2026-10-07 · **Status:** gültig
+
+**Entscheidung:** Legt die Studioleitung eine Kosmetiker:in an, vergibt sie **kein**
+Passwort. Das Konto bekommt einen zufälligen, niemandem bekannten Hash und eine Einladung
+per Mail; das Passwort setzt die eingeladene Person selbst über einen Einmal-Token
+(`AuthTokenPurpose.INVITATION`, sieben Tage gültig). Ein Endpunkt zum Setzen fremder
+Passwörter existiert nicht.
+
+**Warum:** Der naheliegende Weg — ein Feld "Passwort" im Anlegen-Formular — hat drei
+Fehler auf einmal. Erstens kennt die Studioleitung danach das Passwort ihrer Mitarbeiterin
+und muss es ihr übermitteln, also per WhatsApp, Zettel oder Zuruf. Zweitens ist nicht mehr
+unterscheidbar, wer gehandelt hat: Steht in der Behandlungsdokumentation ein Eintrag von
+Anna, könnte ihn auch die Chefin geschrieben haben. In einer Arztpraxis ist genau das der
+Punkt, an dem eine Dokumentation ihre Beweiskraft verliert. Drittens bleibt ein so
+vergebenes Passwort erfahrungsgemäß stehen.
+
+Sieben Tage Gültigkeit statt der 60 Minuten eines Passwort-Resets: Wer neu anfängt, schaut
+nicht am selben Tag ins Postfach. Der Token hat 256 Bit Entropie, die Frist ist nicht der
+schwächste Punkt. Eine neue Einladung entwertet die alte, und die Verwaltung zeigt an, ob
+jemand seinen Zugang schon eingerichtet hat — sonst bleibt die Frage "warum kommt Anna
+nicht rein?" unbeantwortbar.
+
+**Konsequenz:** Ein Konto ist zwischen Anlegen und Einlösen in einem Zwischenzustand:
+vorhanden, aber nicht benutzbar. Solche Personen erscheinen deshalb **nicht** in der
+öffentlichen Liste — buchbar ist nur, wer seinen eigenen Kalender auch öffnen kann. Geht
+die Mail verloren, hängt der Zugang an "Einladung erneut"; einen Weg daran vorbei gibt es
+bewusst nicht.
+
+**Woran man merkt, dass die Entscheidung falsch war:** Wenn in der Praxis reihenweise
+Einladungen ablaufen und die Studioleitung ständig nachschicken muss. Dann ist nicht die
+Entscheidung falsch, sondern die Frist zu kurz — oder die Mail landet im Spam, was zuerst
+zu prüfen wäre.
 
 ---
 

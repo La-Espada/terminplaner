@@ -96,6 +96,44 @@ export class MailService {
   }
 
   /**
+   * Einladung für neues Personal.
+   *
+   * Die Studioleitung legt das Konto an, das Passwort vergibt die eingeladene
+   * Person selbst. Damit kennt es niemand sonst — auch nicht die Chefin.
+   */
+  async sendInvitationMail(
+    an: string,
+    vorname: string,
+    studio: string,
+    link: string,
+    gueltigTage: number,
+  ): Promise<void> {
+    const betreff = `Ihr Zugang zur Terminverwaltung`;
+    const text = [
+      `Guten Tag ${vorname},`,
+      '',
+      `für Sie wurde ein Zugang zur Terminverwaltung von ${studio} angelegt.`,
+      '',
+      'Über diesen Link vergeben Sie Ihr eigenes Passwort:',
+      link,
+      '',
+      `Der Link ist ${gueltigTage} Tage gültig und funktioniert nur einmal.`,
+      '',
+      'Niemand sonst kennt Ihr Passwort — auch die Studioleitung nicht.',
+    ].join('\n');
+
+    const html = `
+      <p>Guten Tag ${escapeHtml(vorname)},</p>
+      <p>für Sie wurde ein Zugang zur Terminverwaltung von ${escapeHtml(studio)} angelegt.</p>
+      <p><a href="${escapeHtml(link)}">Passwort vergeben und loslegen</a></p>
+      <p>Der Link ist ${gueltigTage} Tage gültig und funktioniert nur einmal.</p>
+      <p style="color:#6f6f69">Niemand sonst kennt Ihr Passwort — auch die Studioleitung
+      nicht.</p>`;
+
+    await this.send(an, betreff, text, html);
+  }
+
+  /**
    * Benachrichtigung nach einer Passwortänderung.
    *
    * Geht an die bekannte Adresse, damit ein unbefugter Reset auffällt. Enthält

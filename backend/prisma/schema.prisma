@@ -111,6 +111,11 @@ model RefreshToken {
 enum AuthTokenPurpose {
   EMAIL_VERIFICATION
   PASSWORD_RESET
+  /// Einladung für neu angelegtes Personal. Technisch wie ein Passwort-Reset,
+  /// aber mit eigenem Text und längerer Frist — die Studioleitung legt das Konto
+  /// an, die Kosmetiker:in vergibt ihr Passwort selbst. So kennt niemand sonst
+  /// das Passwort.
+  INVITATION
 
   @@map("auth_token_purpose")
 }

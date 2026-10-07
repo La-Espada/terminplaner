@@ -92,12 +92,25 @@ Am laufenden System geprüft:
 - [x] **17. Dienstleistungen** — Verwaltung im Admin-Web, öffentliche Liste für die App.
       Löschen nur, solange nie gebucht; danach deaktivieren, damit die Termingeschichte
       lesbar bleibt. Preise durchgängig als ganzzahlige Cent, die Oberfläche rechnet um.
+- [x] **18. Kosmetiker:innen** — anlegen, bearbeiten, deaktivieren unter `/team`.
+      **Die Studioleitung vergibt kein Passwort** (E-30): Das Konto wird per Mail
+      eingeladen, die Kosmetiker:in setzt ihr Passwort selbst über `/einladung`. Dadurch
+      bleibt nachvollziehbar, wer in der Dokumentation gehandelt hat. Deaktivieren sperrt
+      die Anmeldung und beendet laufende Sitzungen sofort; gelöscht werden kann nur, wer
+      nie einen Termin hatte.
 
-Zum Ausprobieren liegen zwei Konten in der Entwicklungsdatenbank — beide verschwinden,
-sobald die Tests laufen:
+Zum Ausprobieren: Das Admin-Konto legt der Seed an, es verschwindet bei jedem Testlauf und
+wird so wiederhergestellt:
 
-- `admin@derma-siebenhirten.at` / `dermazentrum-start-2026` (Studioleitung)
-- `anna@derma-siebenhirten.at` / `kosmetikerin-test-2026` (Kosmetiker:in)
+```
+ADMIN_PASSWORD=dermazentrum-start-2026 npm run seed:admin --workspace @terminplaner/backend
+```
+
+Ein Konto zum Testen der Rolle `STAFF` steht **nicht** im Seed, und das soll so bleiben —
+es würde genau den Weg umgehen, den Schritt 18 eingeführt hat. Stattdessen unter `/team`
+eine Kosmetiker:in anlegen, die Einladung in Mailpit (http://localhost:8025) öffnen und das
+Passwort dort vergeben. Das dauert eine halbe Minute und prüft nebenbei, dass der ganze Weg
+noch funktioniert.
 
 - [x] **Admin-Web mit Anmeldung** — Vite und React, Design-Tokens aus `docs/DESIGN.md`,
       Poppins lokal. Der Access-Token liegt nur im Speicher; nach dem Neuladen wird die

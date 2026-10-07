@@ -195,7 +195,9 @@ Backend-CRUD plus Verwaltungsmaske. Dauer, Puffer, Preis, Aktivierung, Sortierun
 
 ### 18. Kosmetiker:innen
 
-`users` mit Rolle `STAFF` plus `staff_profiles`. Anlegen, bearbeiten, deaktivieren.
+`users` mit Rolle `STAFF` plus `staff_profiles`. Anlegen, bearbeiten, deaktivieren. Das
+Passwort vergibt die eingeladene Person selbst über einen Einmal-Link, die Studioleitung
+kennt es nie (E-30).
 **Fertig, wenn:** Eine angelegte Kosmetiker:in kann sich selbst im Admin-Web anmelden.
 
 ### 19. Leistungszuordnung

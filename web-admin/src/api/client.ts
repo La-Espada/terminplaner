@@ -95,6 +95,35 @@ export interface LeistungsDaten {
   sortOrder?: number;
 }
 
+export interface Kosmetikerin {
+  id: string;
+  userId: string;
+  displayName: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  bio: string | null;
+  colorHex: string | null;
+  isActive: boolean;
+  /** Hat die Person ihr Passwort schon vergeben? */
+  zugangAktiv: boolean;
+  /** Laeuft noch eine offene Einladung? */
+  einladungOffen: boolean;
+  leistungAnzahl: number;
+  terminAnzahl: number;
+}
+
+export interface KosmetikerinDaten {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  displayName?: string;
+  bio?: string;
+  colorHex?: string;
+}
+
 export interface Profil {
   id: string;
   email: string;
@@ -151,4 +180,41 @@ export const api = {
 
     loeschen: (id: string) => anfrage<void>(`/admin/services/${id}`, { method: 'DELETE' }),
   },
+
+  team: {
+    liste: () => anfrage<Kosmetikerin[]>('/admin/staff'),
+
+    anlegen: (daten: KosmetikerinDaten) =>
+      anfrage<Kosmetikerin>('/admin/staff', { method: 'POST', body: JSON.stringify(daten) }),
+
+    aendern: (id: string, daten: Partial<Omit<KosmetikerinDaten, 'email'>>) =>
+      anfrage<Kosmetikerin>(`/admin/staff/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(daten),
+      }),
+
+    aktivSetzen: (id: string, isActive: boolean) =>
+      anfrage<Kosmetikerin>(`/admin/staff/${id}/aktiv`, {
+        method: 'PATCH',
+        body: JSON.stringify({ isActive }),
+      }),
+
+    einladungErneut: (id: string) =>
+      anfrage<{ message: string }>(`/admin/staff/${id}/einladung`, {
+        method: 'POST',
+        body: '{}',
+      }),
+
+    loeschen: (id: string) => anfrage<void>(`/admin/staff/${id}`, { method: 'DELETE' }),
+  },
+
+  /**
+   * Einladung einloesen. Braucht keine Anmeldung — wer hier ankommt, hat noch
+   * kein Passwort.
+   */
+  einladungEinloesen: (token: string, password: string) =>
+    anfrage<{ message: string }>('/auth/invitation/accept', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    }),
 };

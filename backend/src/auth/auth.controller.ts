@@ -17,6 +17,7 @@ import { AuthThrottlerGuard } from '../throttling/auth-throttler.guard';
 import { Oeffentlich } from './decorators/oeffentlich.decorator';
 import { LoginDto } from './dto/login.dto';
 import { PasswortVergessenDto } from './dto/passwort-vergessen.dto';
+import { EinladungEinloesenDto } from './dto/einladung-einloesen.dto';
 import { PasswortZuruecksetzenDto } from './dto/passwort-zuruecksetzen.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -93,6 +94,22 @@ export class AuthController {
   async passwortZuruecksetzen(@Body() dto: PasswortZuruecksetzenDto): Promise<Quittung> {
     await this.auth.zuruecksetzenPasswort(dto.token, dto.password);
     return { message: 'Passwort geaendert. Bitte melden Sie sich neu an.' };
+  }
+
+  /**
+   * Einladung einloesen. Oeffentlich — wer hier ankommt, hat noch kein Passwort.
+   *
+   * Dieselbe strenge Grenze wie beim Passwort-Reset: Der Token hat zwar 256 Bit
+   * Entropie, aber ein offener Endpunkt, der Passwoerter setzt, bekommt keine
+   * Gelegenheit zum Durchprobieren.
+   */
+  @SkipThrottle({ standard: true, mail: true })
+  @Oeffentlich()
+  @Post('invitation/accept')
+  @HttpCode(HttpStatus.OK)
+  async einladungEinloesen(@Body() dto: EinladungEinloesenDto): Promise<Quittung> {
+    await this.auth.einloesenEinladung(dto.token, dto.password);
+    return { message: 'Passwort vergeben. Sie koennen sich jetzt anmelden.' };
   }
 
   @SkipThrottle({ standard: true, mail: true })
