@@ -41,12 +41,22 @@ export function NurRollen({ rollen }: { rollen: Rolle[] }) {
   return <Outlet />;
 }
 
-/** Lässt angemeldete Personen nicht auf die Anmeldeseite zurück. */
+/**
+ * Lässt angemeldete Personen nicht auf die Anmeldeseite zurück.
+ *
+ * **Hier wird auch zum ursprünglichen Ziel weitergeleitet**, nicht in der
+ * Anmeldemaske. Beides zusammen führte zu einem Wettlauf: Die Maske leitete nach
+ * erfolgreicher Anmeldung zum gemerkten Ziel, und im selben Durchlauf sah diese
+ * Weiche die angemeldete Person und schickte sie zur Startseite. Das Ziel ging
+ * dabei verloren. Eine Zuständigkeit, eine Stelle.
+ */
 export function NurAbgemeldet() {
   const { person } = useSitzung();
+  const ort = useLocation();
+  const ziel = (ort.state as { von?: string } | null)?.von ?? '/';
 
   if (person === undefined) return <Ladeanzeige />;
-  if (person !== null) return <Navigate to="/" replace />;
+  if (person !== null) return <Navigate to={ziel} replace />;
 
   return <Outlet />;
 }

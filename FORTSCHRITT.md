@@ -74,6 +74,25 @@ dran ist. Die Schrittnummern beziehen sich auf [docs/UMSETZUNG.md](docs/UMSETZUN
       Tablets einklappbar. Noch nicht gebaute Bereiche werden ausgegraut gezeigt statt
       versteckt, damit ersichtlich ist, was geplant ist.
 
+Am laufenden System geprüft:
+
+| Prüfung                         | Ergebnis                                 |
+| ------------------------------- | ---------------------------------------- |
+| `/kalender` ohne Anmeldung      | führt zur Anmeldung, Ziel wird gemerkt   |
+| nach dem Anmelden               | landet in `/kalender`, nicht auf `/`     |
+| Menü als Studioleitung          | neun Punkte                              |
+| Menü als Kosmetiker:in          | fünf — ohne Leistungen, Team, Auswertung |
+| `/leistungen` als Kosmetiker:in | leitet auf die Startseite um             |
+| Begrüßungstext                  | passt sich der Rolle an                  |
+
+**Stufe 3 ist damit abgeschlossen.**
+
+Zum Ausprobieren liegen zwei Konten in der Entwicklungsdatenbank — beide verschwinden,
+sobald die Tests laufen:
+
+- `admin@derma-siebenhirten.at` / `dermazentrum-start-2026` (Studioleitung)
+- `anna@derma-siebenhirten.at` / `kosmetikerin-test-2026` (Kosmetiker:in)
+
 - [x] **Admin-Web mit Anmeldung** — Vite und React, Design-Tokens aus `docs/DESIGN.md`,
       Poppins lokal. Der Access-Token liegt nur im Speicher; nach dem Neuladen wird die
       Sitzung über das Cookie fortgesetzt. (Vorgezogen aus Stufe 3.)

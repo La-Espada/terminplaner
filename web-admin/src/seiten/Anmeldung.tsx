@@ -1,20 +1,14 @@
 import { useState, type FormEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router';
 import { ApiFehler } from '../api/client';
 import { useSitzung } from '../auth/SitzungsKontext';
 
 export function Anmeldung() {
   const { anmelden } = useSitzung();
-  const navigate = useNavigate();
-  const ort = useLocation();
 
   const [email, setEmail] = useState('');
   const [passwort, setPasswort] = useState('');
   const [fehler, setFehler] = useState<string | null>(null);
   const [laedt, setLaedt] = useState(false);
-
-  // Wohin wollte die Person ursprünglich? Der Schutz legt das Ziel hier ab.
-  const ziel = (ort.state as { von?: string } | null)?.von ?? '/';
 
   async function absenden(e: FormEvent) {
     e.preventDefault();
@@ -24,7 +18,8 @@ export function Anmeldung() {
     try {
       await anmelden(email.trim(), passwort);
       setPasswort('');
-      void navigate(ziel, { replace: true });
+      // Keine eigene Weiterleitung: Sobald die Sitzung steht, uebernimmt
+      // NurAbgemeldet und schickt zum gemerkten Ziel.
     } catch (e) {
       setFehler(e instanceof ApiFehler ? e.message : 'Es ist ein unerwarteter Fehler aufgetreten.');
     } finally {
