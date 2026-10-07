@@ -64,6 +64,16 @@ dran ist. Die Schrittnummern beziehen sich auf [docs/UMSETZUNG.md](docs/UMSETZUN
 
 **Stufe 2 ist damit abgeschlossen.**
 
+### Stufe 3 — Admin-Web, Grundgerüst
+
+- [x] **14. React-Projekt** — Vite, React Router, TanStack Query, Tailwind 4 mit den
+      Design-Tokens aus `docs/DESIGN.md`. shadcn/ui bewusst zurückgestellt, siehe E-29.
+- [x] **15. Geschütztes Routing** — Nicht angemeldet führt zur Anmeldung, **mit dem Ziel
+      im Gepäck**: Nach dem Anmelden geht es dort weiter, wo man hinwollte.
+- [x] **16. Layout und Navigation** — Seitenleiste mit rollenabhängigem Menü, auf
+      Tablets einklappbar. Noch nicht gebaute Bereiche werden ausgegraut gezeigt statt
+      versteckt, damit ersichtlich ist, was geplant ist.
+
 - [x] **Admin-Web mit Anmeldung** — Vite und React, Design-Tokens aus `docs/DESIGN.md`,
       Poppins lokal. Der Access-Token liegt nur im Speicher; nach dem Neuladen wird die
       Sitzung über das Cookie fortgesetzt. (Vorgezogen aus Stufe 3.)

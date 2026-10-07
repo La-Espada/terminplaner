@@ -1,41 +1,58 @@
-import { useEffect, useState } from 'react';
-import { api, setzeAccessToken } from './api/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Route, Routes } from 'react-router';
+import { SitzungsAnbieter } from './auth/SitzungsKontext';
+import { Rahmen } from './layout/Rahmen';
+import { MENUE } from './layout/Navigation';
+import { NichtGefunden } from './routen/NichtGefunden';
+import { Platzhalter } from './routen/Platzhalter';
+import { NurAbgemeldet, NurAngemeldet, NurRollen } from './routen/Schutz';
 import { Anmeldung } from './seiten/Anmeldung';
 import { Uebersicht } from './seiten/Uebersicht';
 
-type Zustand = 'pruefe' | 'angemeldet' | 'abgemeldet';
+const abfragen = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Ein Kalender, der sich beim Fensterwechsel neu lädt, springt unter den
+      // Händen. Lieber gezielt aktualisieren, wenn sich etwas geändert hat.
+      refetchOnWindowFocus: false,
+      staleTime: 30_000,
+      retry: 1,
+    },
+  },
+});
 
 export function App() {
-  const [zustand, setZustand] = useState<Zustand>('pruefe');
+  return (
+    <QueryClientProvider client={abfragen}>
+      <BrowserRouter>
+        <SitzungsAnbieter>
+          <Routes>
+            <Route element={<NurAbgemeldet />}>
+              <Route path="/anmelden" element={<Anmeldung />} />
+            </Route>
 
-  // Beim Laden versuchen, die Sitzung über das httpOnly-Cookie fortzusetzen.
-  // Der Access-Token liegt nur im Speicher und ist nach dem Neuladen weg.
-  useEffect(() => {
-    let abgebrochen = false;
+            <Route element={<NurAngemeldet />}>
+              <Route element={<Rahmen />}>
+                <Route index element={<Uebersicht />} />
 
-    api
-      .erneuern()
-      .then((antwort) => {
-        if (abgebrochen) return;
-        setzeAccessToken(antwort.accessToken);
-        setZustand('angemeldet');
-      })
-      .catch(() => {
-        if (!abgebrochen) setZustand('abgemeldet');
-      });
+                {/* Platzhalter für alles, was noch entsteht. Die Rollen hier
+                    spiegeln nur die Navigation — durchgesetzt wird im Backend. */}
+                {MENUE.filter((p) => p.kommtNoch === true).map((p) =>
+                  p.rollen === undefined ? (
+                    <Route key={p.pfad} path={p.pfad} element={<Platzhalter />} />
+                  ) : (
+                    <Route key={p.pfad} element={<NurRollen rollen={p.rollen} />}>
+                      <Route path={p.pfad} element={<Platzhalter />} />
+                    </Route>
+                  ),
+                )}
 
-    return () => {
-      abgebrochen = true;
-    };
-  }, []);
-
-  if (zustand === 'pruefe') {
-    return <div className="wartet">Sitzung wird geprüft …</div>;
-  }
-
-  return zustand === 'angemeldet' ? (
-    <Uebersicht onAbgemeldet={() => setZustand('abgemeldet')} />
-  ) : (
-    <Anmeldung onAngemeldet={() => setZustand('angemeldet')} />
+                <Route path="*" element={<NichtGefunden />} />
+              </Route>
+            </Route>
+          </Routes>
+        </SitzungsAnbieter>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }

@@ -43,6 +43,7 @@ gültig, dreh sie um — aber trag die Änderung hier ein, mit Datum.
 | [E-26](#e-26) | Admin-Web spricht `localhost`, nicht `127.0.0.1`     | 2026-09-23 | gültig       |
 | [E-27](#e-27) | Endpunkte sind standardmäßig geschützt               | 2026-10-04 | gültig       |
 | [E-28](#e-28) | Anfragebegrenzung zählt nach IP **und** Konto        | 2026-10-04 | gültig       |
+| [E-29](#e-29) | Tailwind jetzt, shadcn/ui später                     | 2026-10-07 | gültig       |
 
 ---
 
@@ -592,6 +593,31 @@ und so lässt sich das Verhalten bei Redis-Ausfall selbst bestimmen.
 **Hinter einem Reverse-Proxy ist `TRUST_PROXY_HOPS` zu setzen.** Sonst steht in `req.ip`
 die Adresse des Proxys, die Begrenzung zählt alle Nutzenden als eine Person, und fünf
 Fehlversuche sperren das ganze Studio aus. In der Entwicklung steht der Wert auf 0.
+
+---
+
+<a id="e-29"></a>
+
+## E-29 · Tailwind jetzt, shadcn/ui später
+
+**Entscheidung:** Tailwind 4 ist eingezogen, shadcn/ui bewusst noch nicht. Der Plan nennt
+beides zusammen für Schritt 14.
+
+**Warum Tailwind sofort:** Die Grundlage für das Aussehen lässt sich später nur teuer
+wechseln. Die Design-Tokens aus `docs/DESIGN.md` stehen jetzt als Theme in `stil.css` —
+Tailwind 4 nimmt sie direkt aus CSS, eine `tailwind.config.js` gibt es nicht mehr.
+
+**Warum shadcn/ui noch nicht:** Sein Wert liegt in zugänglichen Bausteinen, die von Hand
+richtig zu bauen mühsam ist — Dialoge mit Fokusfalle, Auswahlfelder mit Tastaturbedienung,
+Datumsfelder. Davon braucht Stufe 3 keinen einzigen; hier entstehen Layout, Navigation und
+Routing. Eine Einrichtung für Bausteine, die noch niemand verwendet, wäre Aufwand ohne
+Gegenwert.
+
+**Wann dann:** Sobald der erste Dialog gebraucht wird, voraussichtlich beim Umbuchen per
+Drag & Drop (Schritt 26). Dort lohnt es sich sofort.
+
+**Woran man merkt, dass die Entscheidung falsch war:** Wenn in `stil.css` eigene Dialoge
+oder Auswahlfelder auftauchen. Dann wurde nachgebaut, was es fertig gibt.
 
 ---
 

@@ -70,6 +70,16 @@ export interface AnmeldeAntwort {
   expiresIn: number;
 }
 
+export interface Profil {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  role: string;
+  emailVerified: boolean;
+}
+
 /**
  * Laufende Erneuerung, damit parallele Aufrufe sich zusammenlegen.
  *
@@ -98,4 +108,7 @@ export const api = {
   },
 
   abmelden: () => anfrage<{ message: string }>('/auth/logout', { method: 'POST', body: '{}' }),
+
+  /** Eigenes Profil. Liefert auch die Rolle, nach der sich die Navigation richtet. */
+  profil: () => anfrage<Profil>('/me'),
 };
