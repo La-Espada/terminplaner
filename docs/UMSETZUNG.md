@@ -204,6 +204,8 @@ kennt es nie (E-30).
 
 `staff_services`: Wer bietet was an. Reine Verknüpfung – Dauer und Preis gelten studioweit
 einheitlich und kommen aus `services`.
+Gepflegt wird als Matrix (E-31); entzogen wird mit ausdrücklicher Bestätigung, solange
+künftige Termine daran hängen.
 **Fertig, wenn:** Eine Leistung lässt sich mehreren Personen zuordnen und wieder entziehen.
 Eine Leistung, die niemand anbietet, taucht in der Buchung nicht auf.
 

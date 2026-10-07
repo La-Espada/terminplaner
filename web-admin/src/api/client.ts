@@ -83,6 +83,22 @@ export interface Leistung {
   /** Wie oft gebucht. Entscheidet, ob Loeschen angeboten wird. */
   terminAnzahl: number;
   anbieterAnzahl: number;
+  /** Erscheint sie in der App? Aktiv zu sein genuegt nicht — jemand muss sie anbieten. */
+  buchbar: boolean;
+}
+
+export interface ZuordnungsZeile {
+  serviceId: string;
+  name: string;
+  durationMinutes: number;
+  priceCents: number;
+  isActive: boolean;
+  staffIds: string[];
+}
+
+export interface ZuordnungsMatrix {
+  staff: Array<{ id: string; displayName: string; isActive: boolean; colorHex: string | null }>;
+  zeilen: ZuordnungsZeile[];
 }
 
 export interface LeistungsDaten {
@@ -206,6 +222,23 @@ export const api = {
       }),
 
     loeschen: (id: string) => anfrage<void>(`/admin/staff/${id}`, { method: 'DELETE' }),
+  },
+
+  zuordnung: {
+    matrix: () => anfrage<ZuordnungsMatrix>('/admin/zuordnung'),
+
+    zuordnen: (staffId: string, serviceId: string) =>
+      anfrage<void>(`/admin/zuordnung/${staffId}/${serviceId}`, { method: 'PUT' }),
+
+    /**
+     * Entziehen. Ohne `bestaetigt` lehnt das Backend ab, solange kuenftige
+     * Termine daran haengen — und nennt deren Anzahl in der Fehlermeldung.
+     */
+    entziehen: (staffId: string, serviceId: string, bestaetigt = false) =>
+      anfrage<void>(
+        `/admin/zuordnung/${staffId}/${serviceId}${bestaetigt ? '?bestaetigt=true' : ''}`,
+        { method: 'DELETE' },
+      ),
   },
 
   /**

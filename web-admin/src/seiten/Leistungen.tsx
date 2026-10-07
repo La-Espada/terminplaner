@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ApiFehler, api, type Leistung } from '../api/client';
 import { LeistungsFormular } from './LeistungsFormular';
+import { LeistungsReiter } from './LeistungsReiter';
 
 /** Cent in eine lesbare Preisangabe. Nie mit Kommazahlen rechnen (E-08). */
 export function alsEuro(cent: number): string {
@@ -52,6 +53,8 @@ export function Leistungen() {
 
   return (
     <div className="mx-auto max-w-5xl">
+      <LeistungsReiter />
+
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-tinte text-3xl font-semibold">Leistungen</h1>
@@ -124,9 +127,15 @@ export function Leistungen() {
                     {alsEuro(l.priceCents)}
                   </td>
                   <td className="px-4 py-3">
-                    {l.isActive ? (
+                    {l.isActive && l.buchbar ? (
                       <span className="bg-creme-tief text-tinte-sanft rounded px-2 py-0.5 text-[12px]">
                         buchbar
+                      </span>
+                    ) : l.isActive ? (
+                      /* Aktiv, aber niemand bietet sie an. Ohne diesen Hinweis
+                         sucht die Studioleitung den Fehler in der App. */
+                      <span className="bg-grau-100 text-fehler rounded px-2 py-0.5 text-[12px]">
+                        niemand bietet sie an
                       </span>
                     ) : (
                       <span className="bg-grau-100 text-grau-700 rounded px-2 py-0.5 text-[12px]">

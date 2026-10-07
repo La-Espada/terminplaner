@@ -98,6 +98,11 @@ Am laufenden System geprüft:
       bleibt nachvollziehbar, wer in der Dokumentation gehandelt hat. Deaktivieren sperrt
       die Anmeldung und beendet laufende Sitzungen sofort; gelöscht werden kann nur, wer
       nie einen Termin hatte.
+- [x] **19. Leistungszuordnung** — Matrix unter `/leistungen/zuordnung`: Zeilen sind
+      Leistungen, Spalten Kosmetiker:innen, ein Haken ist eine Zuordnung. Als Raster, weil
+      man hier nach **Lücken** sucht; in zwei Detailansichten findet man die nie. Eine
+      Leistung, die niemand anbietet, erscheint in der App nicht mehr (E-31) — und die
+      Verwaltung sagt, warum.
 
 Zum Ausprobieren: Das Admin-Konto legt der Seed an, es verschwindet bei jedem Testlauf und
 wird so wiederhergestellt:

@@ -10,6 +10,7 @@ import { Anmeldung } from './seiten/Anmeldung';
 import { Einladung } from './seiten/Einladung';
 import { Leistungen } from './seiten/Leistungen';
 import { Team } from './seiten/Team';
+import { Zuordnung } from './seiten/Zuordnung';
 import { Uebersicht } from './seiten/Uebersicht';
 
 const abfragen = new QueryClient({
@@ -45,6 +46,7 @@ export function App() {
 
                 <Route element={<NurRollen rollen={['ADMIN']} />}>
                   <Route path="/leistungen" element={<Leistungen />} />
+                  <Route path="/leistungen/zuordnung" element={<Zuordnung />} />
                   <Route path="/team" element={<Team />} />
                 </Route>
 

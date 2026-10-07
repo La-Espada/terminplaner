@@ -3,6 +3,21 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { LeistungAendernDto, LeistungAnlegenDto } from './dto/leistung.dto';
 
+/**
+ * Wer zählt als Anbieterin, die eine Leistung buchbar macht.
+ *
+ * Dieselben Bedingungen wie in der öffentlichen Teamliste: Das Profil ist
+ * aktiv, das Konto ist nicht gesperrt, und die Person hat ihre Einladung
+ * eingelöst. Wer seinen eigenen Kalender nicht öffnen kann, soll nicht
+ * buchbar sein.
+ */
+const BUCHBARE_ANBIETERIN = {
+  staff: {
+    isActive: true,
+    user: { status: 'ACTIVE' as const, emailVerifiedAt: { not: null } },
+  },
+};
+
 /** Was die Kundschaft sehen darf. */
 export interface OeffentlicheLeistung {
   id: string;
@@ -19,8 +34,13 @@ export interface VerwalteteLeistung extends OeffentlicheLeistung {
   sortOrder: number;
   /** Wie oft wurde sie schon gebucht? Entscheidet, ob sie löschbar ist. */
   terminAnzahl: number;
-  /** Wie viele Kosmetiker:innen bieten sie an? */
+  /** Wie viele Kosmetiker:innen bieten sie an? Zaehlt auch deaktivierte. */
   anbieterAnzahl: number;
+  /**
+   * Erscheint sie in der App? Aktiv zu sein genuegt nicht — es muss auch
+   * jemand da sein, der sie anbietet und arbeiten kann.
+   */
+  buchbar: boolean;
 }
 
 @Injectable()
@@ -35,10 +55,13 @@ export class ServicesService {
    * Nur aktive Leistungen, und nur die Felder, die sie etwas angehen. Der
    * Puffer etwa ist eine interne Planungsgröße — er verlängert den Kalender,
    * nicht die Behandlung, und würde in der App nur verwirren.
+   *
+   * Eine Leistung, die niemand anbietet, erscheint nicht. Sie wäre in der App
+   * eine Sackgasse: auswählbar, aber ohne eine einzige Behandlerin dahinter.
    */
   async oeffentlicheListe(): Promise<OeffentlicheLeistung[]> {
     return this.prisma.service.findMany({
-      where: { isActive: true },
+      where: { isActive: true, staff: { some: BUCHBARE_ANBIETERIN } },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       select: {
         id: true,
@@ -54,7 +77,16 @@ export class ServicesService {
   async verwaltungsListe(): Promise<VerwalteteLeistung[]> {
     const zeilen = await this.prisma.service.findMany({
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-      include: { _count: { select: { appointments: true, staff: true } } },
+      include: {
+        _count: { select: { appointments: true, staff: true } },
+        // Zusaetzlich die engere Auswahl: nur Personen, die auch wirklich
+        // arbeiten koennen. Die Differenz zu anbieterAnzahl ist genau der Fall,
+        // der die Studioleitung sonst ratlos macht — "die Leistung ist doch
+        // zugeordnet, warum sieht man sie nicht?". Prisma kann einen Zaehler
+        // nicht filtern, deshalb die Zeilen holen und hier zaehlen; es sind
+        // wenige.
+        staff: { where: BUCHBARE_ANBIETERIN, select: { staffId: true } },
+      },
     });
 
     return zeilen.map((z) => ({
@@ -68,6 +100,7 @@ export class ServicesService {
       sortOrder: z.sortOrder,
       terminAnzahl: z._count.appointments,
       anbieterAnzahl: z._count.staff,
+      buchbar: z.isActive && z.staff.length > 0,
     }));
   }
 

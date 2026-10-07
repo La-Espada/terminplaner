@@ -10,6 +10,7 @@ import { ServicesModule } from './services/services.module';
 import { StaffModule } from './staff/staff.module';
 import { ThrottlingModule } from './throttling/throttling.module';
 import { UsersModule } from './users/users.module';
+import { ZuordnungModule } from './zuordnung/zuordnung.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { UsersModule } from './users/users.module';
     ConsentsModule,
     ServicesModule,
     StaffModule,
+    ZuordnungModule,
     HealthModule,
   ],
 })

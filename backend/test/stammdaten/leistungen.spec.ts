@@ -167,9 +167,23 @@ describe('Leistungen', () => {
   });
 
   describe('Sichtbarkeit für die Kundschaft', () => {
+    /**
+     * Seit Schritt 19 erscheint öffentlich nur, was auch jemand anbietet — eine
+     * Leistung ohne Anbieterin wäre in der App eine Sackgasse. Die Fälle hier
+     * prüfen aber die Sichtbarkeitsregeln der Leistung selbst, deshalb bekommt
+     * jede eine Anbieterin, damit diese Bedingung nicht im Weg steht.
+     */
+    const mitAnbieterin = async (name: string, weiteres: Record<string, unknown> = {}) => {
+      const leistung = await anlegen({ name, ...weiteres } as never);
+      await prisma.staffService.create({
+        data: { staffId: staffProfilId, serviceId: leistung.id },
+      });
+      return leistung;
+    };
+
     it('zeigt nur aktive Leistungen und ohne interne Felder', async () => {
-      await anlegen({ name: 'Sichtbar' });
-      const versteckt = await anlegen({ name: 'Versteckt' });
+      await mitAnbieterin('Sichtbar');
+      const versteckt = await mitAnbieterin('Versteckt');
 
       await request(server)
         .patch(`/api/v1/admin/services/${versteckt.id}`)
@@ -192,9 +206,9 @@ describe('Leistungen', () => {
     });
 
     it('sortiert nach Reihenfolge, dann nach Name', async () => {
-      await anlegen({ name: 'Zuletzt', sortOrder: 20 } as never);
-      await anlegen({ name: 'Zuerst', sortOrder: 10 } as never);
-      await anlegen({ name: 'Auch zuerst', sortOrder: 10 } as never);
+      await mitAnbieterin('Zuletzt', { sortOrder: 20 });
+      await mitAnbieterin('Zuerst', { sortOrder: 10 });
+      await mitAnbieterin('Auch zuerst', { sortOrder: 10 });
 
       const antwort = await request(server).get('/api/v1/services').expect(200);
       expect((antwort.body as Array<{ name: string }>).map((l) => l.name)).toEqual([
@@ -202,6 +216,15 @@ describe('Leistungen', () => {
         'Zuerst',
         'Zuletzt',
       ]);
+    });
+
+    it('verschweigt eine Leistung, die niemand anbietet', async () => {
+      // Das zweite Abnahmekriterium von Schritt 19, hier noch einmal aus Sicht
+      // der Leistungen: angelegt und aktiv genuegt nicht.
+      await anlegen({ name: 'Ohne Anbieterin' });
+
+      const antwort = await request(server).get('/api/v1/services').expect(200);
+      expect(antwort.body).toEqual([]);
     });
   });
 

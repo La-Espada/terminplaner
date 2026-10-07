@@ -45,6 +45,7 @@ gültig, dreh sie um — aber trag die Änderung hier ein, mit Datum.
 | [E-28](#e-28) | Anfragebegrenzung zählt nach IP **und** Konto         | 2026-10-04 | gültig       |
 | [E-29](#e-29) | Tailwind jetzt, shadcn/ui später                      | 2026-10-07 | gültig       |
 | [E-30](#e-30) | Personal wird eingeladen, nicht mit Passwort angelegt | 2026-10-07 | gültig       |
+| [E-31](#e-31) | Leistung ohne Anbieterin ist oeffentlich unsichtbar   | 2026-10-08 | gueltig      |
 
 ---
 
@@ -658,6 +659,45 @@ bewusst nicht.
 Einladungen ablaufen und die Studioleitung ständig nachschicken muss. Dann ist nicht die
 Entscheidung falsch, sondern die Frist zu kurz — oder die Mail landet im Spam, was zuerst
 zu prüfen wäre.
+
+---
+
+## E-31
+
+### Eine Leistung ohne Anbieterin erscheint oeffentlich nicht
+
+**Datum:** 2026-10-08 · **Status:** gültig
+
+**Entscheidung:** `GET /services` liefert eine Leistung nur, wenn mindestens eine
+Kosmetiker:in sie anbietet, die auch arbeiten kann — Profil aktiv, Konto nicht gesperrt,
+Einladung eingelöst. Aktiv zu sein genügt nicht mehr. Die Verwaltungsliste zeigt dafür ein
+eigenes Feld `buchbar` und nennt den Fall beim Namen.
+
+**Warum:** Eine Leistung ohne Anbieterin ist in der App eine Sackgasse: auswählbar, aber
+dahinter steht niemand. Die Kundin wählt, tippt auf Weiter und bekommt eine leere Liste —
+und hält das für einen Fehler der App, nicht für eine Lücke in der Pflege. Besser gar nicht
+erst anbieten.
+
+Die Bedingung ist bewusst dieselbe wie in der öffentlichen Teamliste und nicht bloß "es
+gibt eine Zeile in `staff_services`". Eine Zuordnung auf eine deaktivierte Person ist keine
+Anbieterin; sonst erschiene die Leistung, wäre aber trotzdem nicht buchbar.
+
+**Konsequenz:** Die Studioleitung kann eine Leistung anlegen und sie taucht nirgends auf —
+das ist verwirrend, wenn man den Grund nicht sieht. Deshalb steht er in der Liste: "niemand
+bietet sie an". Ohne diesen Hinweis wäre die Regel eine Falle. Zwei Tests aus Schritt 17
+mussten nachziehen; sie prüften Sichtbarkeitsregeln der Leistung und legten dabei keine
+Zuordnung an.
+
+**Entzogen wird mit Bestätigung, nicht verboten:** Hängen künftige Termine an einer
+Zuordnung, lehnt der Server zunächst ab und nennt die Anzahl. Erst `?bestaetigt=true` führt
+ihn aus. Durchwinken wäre falsch — der Grund fürs Entziehen betrifft oft auch die
+bestehenden Termine, etwa eine abgelaufene Zertifizierung. Zwangsweise stornieren wäre noch
+falscher: Ob und wie ein vereinbarter Termin abgesagt wird, entscheidet das Studio, nicht
+diese Funktion.
+
+**Woran man merkt, dass die Entscheidung falsch war:** Wenn im Betrieb regelmäßig gefragt
+wird, warum eine Leistung in der App fehlt, obwohl sie aktiv ist. Dann ist nicht die Regel
+falsch, sondern der Hinweis zu leise.
 
 ---
 
