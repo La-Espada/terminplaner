@@ -57,7 +57,7 @@ export class StaffService {
   /**
    * Das Team, wie es die Kundschaft sieht.
    *
-   * Bewusst kurz gehalten: Anzeigename, Vorstellungstext, Farbe. Nachname,
+   * Bewusst kurz gehalten: Anzeigename, Vorstellungstext, Bild. Nachname,
    * E-Mail-Adresse und Telefonnummer sind Beschaeftigtendaten und gehen die
    * Kundschaft nichts an (Grundsatz der Datenminimierung, Art. 5 Abs. 1 lit. c).
    *
@@ -142,54 +142,120 @@ export class StaffService {
     if (vorhanden !== null) {
       // Hier ist eine klare Meldung richtig: Die Studioleitung verwaltet ihr
       // eigenes Team und darf wissen, dass die Adresse schon vergeben ist.
+      //
+      // Die Pruefung laeuft ueber alle Konten, nicht nur ueber Personal. In
+      // einer Hautarztpraxis ist der haeufigste Treffer deshalb nicht "schon
+      // angestellt", sondern "ist bereits Kundin" — und dafuer gibt es derzeit
+      // keinen Weg (siehe CHECKLISTE.md). Die Meldung nennt beides, damit
+      // niemand vergeblich sucht.
       throw new ConflictException(
-        'Diese E-Mail-Adresse wird bereits verwendet. Jede Person braucht eine eigene Adresse.',
+        'Diese E-Mail-Adresse wird bereits verwendet — entweder von einer anderen ' +
+          'Person im Team oder von einem Kundenkonto. Verwenden Sie bitte eine ' +
+          'zweite Adresse, etwa die dienstliche.',
       );
     }
 
     // Unbrauchbares Passwort: lang, zufällig, niemandem bekannt.
     const platzhalter = await this.passwoerter.hashPassword(randomBytes(32).toString('base64url'));
 
-    const profil = await this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          email: dto.email,
-          passwordHash: platzhalter,
-          role: 'STAFF',
-          firstName: dto.firstName,
-          lastName: dto.lastName,
-          phone: dto.phone ?? null,
-          // Noch nicht bestätigt — das geschieht beim Einlösen der Einladung.
-          emailVerifiedAt: null,
-        },
-        select: { id: true },
-      });
+    let profil: { id: string };
+    try {
+      profil = await this.prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email: dto.email,
+            passwordHash: platzhalter,
+            role: 'STAFF',
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            phone: dto.phone ?? null,
+            // Noch nicht bestätigt — das geschieht beim Einlösen der Einladung.
+            emailVerifiedAt: null,
+          },
+          select: { id: true },
+        });
 
-      return tx.staffProfile.create({
-        data: {
-          userId: user.id,
-          displayName: dto.displayName ?? dto.firstName,
-          bio: dto.bio ?? null,
-          colorHex: dto.colorHex ?? null,
-          isActive: true,
-        },
-        select: { id: true },
+        return tx.staffProfile.create({
+          data: {
+            userId: user.id,
+            displayName: dto.displayName || dto.firstName,
+            // `||` und nicht `??`: Das Formular schickt leere Felder als "",
+            // nicht als undefined. Mit `??` landete der Leerstring in der
+            // Datenbank — und `color_hex` ist Char(7), Postgres fuellt mit
+            // Leerzeichen auf. Die Oberflaeche prueft auf null und maelte dann
+            // einen Punkt in der Farbe "       ".
+            bio: dto.bio || null,
+            colorHex: dto.colorHex || null,
+            isActive: true,
+          },
+          select: { id: true },
+        });
       });
-    });
+    } catch (fehler) {
+      // Zwei gleichzeitige Anlagen derselben Adresse kommen beide durch die
+      // Pruefung oben; die zweite scheitert erst am Unique-Index. Ohne diesen
+      // Fang käme ein 500 heraus statt der Meldung, die den Fall erklaert.
+      if (fehler instanceof Prisma.PrismaClientKnownRequestError && fehler.code === 'P2002') {
+        throw new ConflictException(
+          'Diese E-Mail-Adresse wurde soeben vergeben. Bitte verwenden Sie eine andere.',
+        );
+      }
+      throw fehler;
+    }
 
-    await this.einladungVersenden(profil.id);
-    this.logger.log('Kosmetiker:in angelegt und eingeladen');
+    // Der Mailversand steht bewusst ausserhalb der Transaktion und darf den
+    // Aufruf nicht scheitern lassen. Faellt SMTP aus, ist das Konto trotzdem
+    // angelegt; ein 500 wuerde die Studioleitung zum Neuanlegen verleiten, und
+    // das scheitert dann an der schon vergebenen Adresse. Die Liste zeigt ueber
+    // `einladungOffen`, dass noch keine Einladung unterwegs ist, und "Einladung
+    // erneut" ist der Reparaturweg.
+    try {
+      await this.einladungVersenden(profil.id);
+      this.logger.log('Kosmetiker:in angelegt und eingeladen');
+    } catch (fehler) {
+      this.logger.error(
+        'Kosmetiker:in angelegt, aber die Einladung konnte nicht verschickt werden',
+        fehler instanceof Error ? fehler.stack : undefined,
+      );
+    }
+
     return this.einzeln(profil.id);
   }
 
-  /** Verschickt die Einladung erneut. Entwertet dabei die vorige. */
+  /**
+   * Verschickt die Einladung erneut. Entwertet dabei die vorige.
+   *
+   * **Nur, solange die Person ihren Zugang noch nicht eingerichtet hat.** Sonst
+   * waere das hier doch ein von der Studioleitung ausgeloester Weg, das
+   * Passwort eines aktiven Kontos zu ersetzen — sieben Tage gueltig und ohne
+   * die Benachrichtigung, die ein echter Reset ausloest. Wer sein Passwort
+   * vergessen hat, nimmt "Passwort vergessen"; dieser Weg laeuft ueber das
+   * eigene Postfach und meldet sich hinterher.
+   */
   async einladungVersenden(profilId: string): Promise<void> {
     const profil = await this.prisma.staffProfile.findUnique({
       where: { id: profilId },
-      select: { user: { select: { id: true, email: true, firstName: true } } },
+      select: {
+        user: {
+          select: { id: true, email: true, firstName: true, emailVerifiedAt: true, status: true },
+        },
+      },
     });
 
     if (profil === null) throw new NotFoundException('Kosmetiker:in nicht gefunden.');
+
+    if (profil.user.emailVerifiedAt !== null) {
+      throw new ConflictException(
+        'Diese Person hat ihren Zugang bereits eingerichtet. ' +
+          'Ein vergessenes Passwort setzt sie ueber "Passwort vergessen" selbst zurueck.',
+      );
+    }
+
+    if (profil.user.status !== 'ACTIVE') {
+      throw new ConflictException(
+        'Dieses Konto ist deaktiviert. Aktivieren Sie es zuerst, dann koennen Sie einladen.',
+      );
+    }
 
     const klartext = await this.einmalToken.issue(
       profil.user.id,
@@ -265,6 +331,20 @@ export class StaffService {
         where: { id: profil.userId },
         data: { status: aktiv ? 'ACTIVE' : 'BLOCKED' },
       });
+
+      if (!aktiv) {
+        // Offene Einladungen mit entwerten. Das Einloesen prueft den
+        // Kontostatus ohnehin, aber ein Link, der sieben Tage lang auf ein
+        // gesperrtes Konto zeigt, soll gar nicht erst existieren.
+        await tx.authToken.updateMany({
+          where: {
+            userId: profil.userId,
+            purpose: AuthTokenPurpose.INVITATION,
+            usedAt: null,
+          },
+          data: { usedAt: new Date() },
+        });
+      }
     });
 
     if (!aktiv) {

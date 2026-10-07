@@ -97,7 +97,14 @@ export interface ZuordnungsZeile {
 }
 
 export interface ZuordnungsMatrix {
-  staff: Array<{ id: string; displayName: string; isActive: boolean; colorHex: string | null }>;
+  staff: Array<{
+    id: string;
+    displayName: string;
+    isActive: boolean;
+    /** Einladung eingeloest? Nur dann macht ein Haken eine Leistung buchbar. */
+    zugangAktiv: boolean;
+    colorHex: string | null;
+  }>;
   zeilen: ZuordnungsZeile[];
 }
 

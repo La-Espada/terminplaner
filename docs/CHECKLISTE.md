@@ -41,6 +41,30 @@ Stand: 2026-09-20
       wie wird es dokumentiert
 - [ ] Aufbewahrungsfristen final festlegen und die Vorschlagswerte in `.env` ersetzen
 
+## Eine Kundin als Kosmetiker:in anstellen
+
+**Offen seit:** 2026-10-08 · **Blockiert:** nichts akut
+
+Ein Konto gehört genau einer E-Mail-Adresse, und `users.email` ist eindeutig. Ist eine
+künftige Mitarbeiterin bereits Kundin der Praxis — in einem Hautarztzentrum der
+erwartbare Fall — lässt sie sich unter derselben Adresse nicht anlegen. Die Meldung
+benennt den Fall inzwischen und schlägt eine zweite Adresse vor, aber das ist eine
+Umgehung, keine Lösung.
+
+Drei mögliche Wege, alle mit Haken:
+
+1. **Zweite Adresse verlangen** (heutiger Stand). Einfach, und die Trennung zwischen
+   Patientenakte und Dienstkonto ist sauber. Dafür hat die Person zwei Konten und sieht
+   ihre eigenen Termine nicht im Dienstkonto.
+2. **Rolle hochstufen.** Ein Konto, beide Rollen. Technisch wenig Aufwand, aber dann
+   greift dieselbe Person mit demselben Login auf ihre eigene Patientenakte und auf die
+   fremder Patientinnen zu. Das ist genau die Vermischung, die eine
+   Zugriffsprotokollierung unbrauchbar macht.
+3. **Zwei Rollen je Konto** als eigenes Konzept. Sauber, aber ein Umbau am
+   Rechtemodell — und der gehört nicht in Stufe 4.
+
+**Zu entscheiden mit dem Studio**, spätestens wenn der Fall zum ersten Mal eintritt.
+
 ## Auftragsverarbeitungsverträge (Art. 28)
 
 - [ ] Hoster (Server und Backups)

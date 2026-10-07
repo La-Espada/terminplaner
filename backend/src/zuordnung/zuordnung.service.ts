@@ -23,7 +23,19 @@ export interface ZuordnungsZeile {
 
 export interface ZuordnungsMatrix {
   /** Spaltenköpfe: alle Kosmetiker:innen, auch deaktivierte. */
-  staff: Array<{ id: string; displayName: string; isActive: boolean; colorHex: string | null }>;
+  staff: Array<{
+    id: string;
+    displayName: string;
+    isActive: boolean;
+    /**
+     * Hat die Person ihren Zugang eingerichtet? Ohne das kann die Matrix die
+     * Luecke nicht zeigen, um die es hier geht: Eine Leistung, die nur einer
+     * frisch eingeladenen Person zugeordnet ist, traegt einen Haken und ist
+     * trotzdem nicht buchbar.
+     */
+    zugangAktiv: boolean;
+    colorHex: string | null;
+  }>;
   zeilen: ZuordnungsZeile[];
 }
 
@@ -53,7 +65,13 @@ export class ZuordnungService {
     const [personen, leistungen] = await Promise.all([
       this.prisma.staffProfile.findMany({
         orderBy: [{ isActive: 'desc' }, { displayName: 'asc' }],
-        select: { id: true, displayName: true, isActive: true, colorHex: true },
+        select: {
+          id: true,
+          displayName: true,
+          isActive: true,
+          colorHex: true,
+          user: { select: { status: true, emailVerifiedAt: true } },
+        },
       }),
       this.prisma.service.findMany({
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
@@ -69,7 +87,16 @@ export class ZuordnungService {
     ]);
 
     return {
-      staff: personen,
+      staff: personen.map((p) => ({
+        id: p.id,
+        displayName: p.displayName,
+        isActive: p.isActive,
+        colorHex: p.colorHex,
+        // Dieselbe Bedingung wie in der oeffentlichen Liste und in
+        // services.service.ts. Drei Stellen, eine Regel — das ist eine zu
+        // viel; zusammengefasst wird sie, sobald eine vierte dazukommt.
+        zugangAktiv: p.user.status === 'ACTIVE' && p.user.emailVerifiedAt !== null,
+      })),
       zeilen: leistungen.map((l) => ({
         serviceId: l.id,
         name: l.name,
@@ -134,9 +161,11 @@ export class ZuordnungService {
       }
     }
 
-    await this.prisma.staffService.delete({
-      where: { staffId_serviceId: { staffId, serviceId } },
-    });
+    // deleteMany statt delete: Zwei gleichzeitige Klicks auf dasselbe Kaestchen
+    // kommen beide an der Pruefung oben vorbei, und `delete` wuerde beim
+    // zweiten mit P2025 werfen — also 500 auf eine Aktion, die versprochen
+    // idempotent ist. `deleteMany` liefert dann schlicht count: 0.
+    await this.prisma.staffService.deleteMany({ where: { staffId, serviceId } });
 
     this.logger.log('Leistungszuordnung entzogen');
   }

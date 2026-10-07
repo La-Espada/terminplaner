@@ -149,6 +149,15 @@ describe('Kosmetiker:innen', () => {
         .expect(401);
     });
 
+    it('speichert leere Felder als nicht gesetzt, nicht als Leerstring', async () => {
+      // Das Formular schickt leere Felder als "". Landete das in color_hex
+      // (Char(7)), fuellte Postgres auf sieben Leerzeichen auf, und die
+      // Oberflaeche maelte einen Farbpunkt in der Farbe "       ".
+      const angelegt = await anlegen({ bio: '', colorHex: '' });
+      expect(angelegt.bio).toBeNull();
+      expect(angelegt.colorHex).toBeNull();
+    });
+
     it('lehnt eine bereits vergebene Adresse ab', async () => {
       await anlegen();
       await request(server)
@@ -242,6 +251,52 @@ describe('Kosmetiker:innen', () => {
         .post('/api/v1/auth/login')
         .send({ email: beispiel.email, password: 'anna-ihr-eigenes-passwort' })
         .expect(401);
+    });
+
+    it('macht eine offene Einladung unbrauchbar', async () => {
+      // Der Fall, der ohne Pruefung ein Hintereingang waere: Anna wird
+      // eingeladen, loest nicht ein, wird deaktiviert — und klickt den Link
+      // zwei Tage spaeter trotzdem. Setzte das Einloesen den Status auf ACTIVE,
+      // verschaffte sie sich damit selbst wieder Zugang zu Kundendaten.
+      const angelegt = await anlegen();
+      const token = await tokenAusNeuesterMail();
+
+      await request(server)
+        .patch(`/api/v1/admin/staff/${angelegt.id}/aktiv`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ isActive: false })
+        .expect(200);
+
+      await request(server)
+        .post('/api/v1/auth/invitation/accept')
+        .send({ token, password: 'anna-ihr-eigenes-passwort' })
+        .expect(400);
+
+      // Und erst recht keine Anmeldung.
+      await request(server)
+        .post('/api/v1/auth/login')
+        .send({ email: beispiel.email, password: 'anna-ihr-eigenes-passwort' })
+        .expect(401);
+
+      const konto = await prisma.user.findUniqueOrThrow({ where: { email: beispiel.email } });
+      expect(konto.status).toBe('BLOCKED');
+      expect(konto.emailVerifiedAt).toBeNull();
+    });
+
+    it('lässt auch keine neue Einladung für ein deaktiviertes Konto zu', async () => {
+      const angelegt = await anlegen();
+
+      await request(server)
+        .patch(`/api/v1/admin/staff/${angelegt.id}/aktiv`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ isActive: false })
+        .expect(200);
+
+      await request(server)
+        .post(`/api/v1/admin/staff/${angelegt.id}/einladung`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({})
+        .expect(409);
     });
 
     it('nimmt deaktivierte Personen aus der öffentlichen Liste', async () => {
@@ -339,6 +394,25 @@ describe('Kosmetiker:innen', () => {
         .post('/api/v1/auth/invitation/accept')
         .send({ token: neuerToken, password: 'ein-langes-passwort' })
         .expect(200);
+    });
+
+    it('wird abgelehnt, wenn das Konto schon ein Passwort hat', async () => {
+      // Sonst waere "Einladung erneut" doch ein von der Studioleitung
+      // ausgeloester Weg, das Passwort eines aktiven Kontos zu ersetzen —
+      // sieben Tage gueltig und ohne die Benachrichtigung, die ein echter
+      // Reset ausloest.
+      const angelegt = await anlegen();
+      const token = await tokenAusNeuesterMail();
+      await request(server)
+        .post('/api/v1/auth/invitation/accept')
+        .send({ token, password: 'anna-ihr-eigenes-passwort' })
+        .expect(200);
+
+      await request(server)
+        .post(`/api/v1/admin/staff/${angelegt.id}/einladung`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({})
+        .expect(409);
     });
 
     it('lehnt ein zu kurzes Passwort ab', async () => {

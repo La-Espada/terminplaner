@@ -242,8 +242,12 @@ export class AuthService {
    * Technisch fast ein Passwort-Reset, mit zwei Unterschieden. Erstens faellt
    * die Mail "Ihr Passwort wurde geaendert" weg — es wurde nichts geaendert,
    * sondern erstmals vergeben, und eine Warnmeldung zum eigenen Klick
-   * verunsichert nur. Zweitens wird das Konto dabei freigeschaltet: Wer den
-   * Link aus seinem Postfach geholt hat, hat die Adresse bewiesen.
+   * verunsichert nur. Zweitens gilt die Adresse danach als bestaetigt: Wer den
+   * Link aus seinem Postfach geholt hat, hat sie bewiesen.
+   *
+   * Den Kontostatus ruehrt das **nicht** an. Ein gesperrtes Konto bleibt
+   * gesperrt, sonst waere jede offene Einladung ein Hintereingang an der
+   * Deaktivierung vorbei.
    */
   async einloesenEinladung(token: string, passwort: string): Promise<void> {
     const userId = await this.tokens.redeem(token, AuthTokenPurpose.INVITATION);
@@ -254,11 +258,29 @@ export class AuthService {
       );
     }
 
+    // Der Token allein genuegt nicht. Wurde das Konto zwischen Einladung und
+    // Klick gesperrt, darf der Link es nicht wiederbeleben — sonst verschafft
+    // sich eine entlassene Person ueber eine sieben Tage alte Mail selbst
+    // wieder Zugang zu Kunden- und spaeter Gesundheitsdaten.
+    const konto = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { status: true },
+    });
+
+    if (konto === null || konto.status !== 'ACTIVE') {
+      this.logger.warn('Einladung fuer gesperrtes oder entferntes Konto vorgelegt');
+      // Dieselbe Meldung wie bei einem abgelaufenen Token. Dass das Konto
+      // gesperrt ist, geht den Aufrufer nichts an.
+      throw new BadRequestException(
+        'Diese Einladung ist ungueltig oder abgelaufen. Bitte lassen Sie sich eine neue schicken.',
+      );
+    }
+
     const passwordHash = await this.passwords.hashPassword(passwort);
 
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { passwordHash, emailVerifiedAt: new Date(), status: 'ACTIVE' },
+      data: { passwordHash, emailVerifiedAt: new Date() },
       select: { id: true },
     });
 

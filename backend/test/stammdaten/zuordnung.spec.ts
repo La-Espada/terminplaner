@@ -110,7 +110,12 @@ describe('Leistungszuordnung', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
     return antwort.body as {
-      staff: Array<{ id: string; displayName: string; isActive: boolean }>;
+      staff: Array<{
+        id: string;
+        displayName: string;
+        isActive: boolean;
+        zugangAktiv: boolean;
+      }>;
       zeilen: Array<{ serviceId: string; name: string; staffIds: string[] }>;
     };
   };
@@ -168,6 +173,21 @@ describe('Leistungszuordnung', () => {
     it('ist beim Entziehen idempotent', async () => {
       await alsAdmin('delete', `/api/v1/admin/zuordnung/${annaId}/${gesichtId}`).expect(204);
       await alsAdmin('delete', `/api/v1/admin/zuordnung/${annaId}/${gesichtId}`).expect(204);
+    });
+
+    it('bleibt beim gleichzeitigen Entziehen idempotent', async () => {
+      // Zwei Klicks auf dasselbe Kaestchen kommen beide an der Pruefung
+      // vorbei. Mit `delete` wuerfe der zweite P2025 und damit 500 — auf eine
+      // Aktion, die ausdruecklich idempotent sein soll.
+      await zuordnen(annaId, gesichtId);
+
+      const ergebnisse = await Promise.all([
+        alsAdmin('delete', `/api/v1/admin/zuordnung/${annaId}/${gesichtId}`),
+        alsAdmin('delete', `/api/v1/admin/zuordnung/${annaId}/${gesichtId}`),
+      ]);
+
+      expect(ergebnisse.map((e) => e.status)).toEqual([204, 204]);
+      expect((await zeile(gesichtId)).staffIds).toEqual([]);
     });
 
     it('lehnt unbekannte Kennungen ab', async () => {
@@ -262,6 +282,19 @@ describe('Leistungszuordnung', () => {
       ).expect(409);
 
       expect((await zeile(gesichtId)).staffIds).toEqual([annaId]);
+    });
+  });
+
+  describe('Zugangsstatus in der Matrix', () => {
+    it('meldet eine noch nicht angemeldete Person als nicht zugangsaktiv', async () => {
+      // Ohne dieses Feld kann die Matrix die Luecke nicht zeigen, um die es
+      // geht: Eine Leistung, die nur einer frisch eingeladenen Person
+      // zugeordnet ist, traegt einen Haken und ist trotzdem nicht buchbar.
+      await prisma.user.update({ where: { id: lisaUserId }, data: { emailVerifiedAt: null } });
+
+      const m = await matrix();
+      expect(m.staff.find((s) => s.displayName === 'Lisa')!.zugangAktiv).toBe(false);
+      expect(m.staff.find((s) => s.displayName === 'Anna')!.zugangAktiv).toBe(true);
     });
   });
 

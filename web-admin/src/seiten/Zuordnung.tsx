@@ -136,8 +136,14 @@ export function Zuordnung() {
                       {s.displayName}
                     </span>
                   </span>
-                  {!s.isActive && (
+                  {!s.isActive ? (
                     <span className="text-grau-500 block text-[11px] font-normal">deaktiviert</span>
+                  ) : (
+                    !s.zugangAktiv && (
+                      <span className="text-grau-500 block text-[11px] font-normal">
+                        noch nicht angemeldet
+                      </span>
+                    )
                   )}
                 </th>
               ))}
@@ -145,10 +151,14 @@ export function Zuordnung() {
           </thead>
           <tbody>
             {zeilen.map((z) => {
-              // Nur aktive Personen machen eine Leistung wirklich buchbar.
-              const anbieter = z.staffIds.filter(
-                (id) => staff.find((s) => s.id === id)?.isActive === true,
-              );
+              // Buchbar macht eine Leistung nur, wer aktiv ist **und** seinen
+              // Zugang eingerichtet hat. Ohne die zweite Bedingung zeigte die
+              // Matrix einen Haken, waehrend die App die Leistung verschweigt —
+              // genau die Falle, die E-31 ausschliessen wollte.
+              const anbieter = z.staffIds.filter((id) => {
+                const person = staff.find((s) => s.id === id);
+                return person?.isActive === true && person.zugangAktiv;
+              });
               const verwaist = z.isActive && anbieter.length === 0;
 
               return (

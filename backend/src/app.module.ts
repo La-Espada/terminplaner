@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation';
+import { ArbeitszeitenModule } from './arbeitszeiten/arbeitszeiten.module';
 import { AuthModule } from './auth/auth.module';
 import { ConsentsModule } from './consents/consents.module';
 import { HealthModule } from './health/health.module';
@@ -30,6 +31,7 @@ import { ZuordnungModule } from './zuordnung/zuordnung.module';
     ServicesModule,
     StaffModule,
     ZuordnungModule,
+    ArbeitszeitenModule,
     HealthModule,
   ],
 })
