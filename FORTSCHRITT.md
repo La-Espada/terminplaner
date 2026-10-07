@@ -87,6 +87,12 @@ Am laufenden System geprüft:
 
 **Stufe 3 ist damit abgeschlossen.**
 
+### Stufe 4 — Stammdaten
+
+- [x] **17. Dienstleistungen** — Verwaltung im Admin-Web, öffentliche Liste für die App.
+      Löschen nur, solange nie gebucht; danach deaktivieren, damit die Termingeschichte
+      lesbar bleibt. Preise durchgängig als ganzzahlige Cent, die Oberfläche rechnet um.
+
 Zum Ausprobieren liegen zwei Konten in der Entwicklungsdatenbank — beide verschwinden,
 sobald die Tests laufen:
 

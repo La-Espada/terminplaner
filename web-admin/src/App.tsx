@@ -7,6 +7,7 @@ import { NichtGefunden } from './routen/NichtGefunden';
 import { Platzhalter } from './routen/Platzhalter';
 import { NurAbgemeldet, NurAngemeldet, NurRollen } from './routen/Schutz';
 import { Anmeldung } from './seiten/Anmeldung';
+import { Leistungen } from './seiten/Leistungen';
 import { Uebersicht } from './seiten/Uebersicht';
 
 const abfragen = new QueryClient({
@@ -34,6 +35,10 @@ export function App() {
             <Route element={<NurAngemeldet />}>
               <Route element={<Rahmen />}>
                 <Route index element={<Uebersicht />} />
+
+                <Route element={<NurRollen rollen={['ADMIN']} />}>
+                  <Route path="/leistungen" element={<Leistungen />} />
+                </Route>
 
                 {/* Platzhalter für alles, was noch entsteht. Die Rollen hier
                     spiegeln nur die Navigation — durchgesetzt wird im Backend. */}

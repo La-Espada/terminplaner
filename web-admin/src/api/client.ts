@@ -54,7 +54,8 @@ async function anfrage<T>(pfad: string, optionen: RequestInit = {}): Promise<T> 
     throw new ApiFehler(0, 'Keine Verbindung zum Server. Läuft das Backend?');
   }
 
-  const inhalt: unknown = await antwort.json().catch(() => ({}));
+  // 204 hat keinen Rumpf — .json() wuerde dort werfen.
+  const inhalt: unknown = antwort.status === 204 ? null : await antwort.json().catch(() => ({}));
 
   if (!antwort.ok) {
     const roh = (inhalt as ProblemAntwort).message;
@@ -68,6 +69,30 @@ async function anfrage<T>(pfad: string, optionen: RequestInit = {}): Promise<T> 
 export interface AnmeldeAntwort {
   accessToken: string;
   expiresIn: number;
+}
+
+export interface Leistung {
+  id: string;
+  name: string;
+  description: string | null;
+  durationMinutes: number;
+  bufferMinutes: number;
+  priceCents: number;
+  isActive: boolean;
+  sortOrder: number;
+  /** Wie oft gebucht. Entscheidet, ob Loeschen angeboten wird. */
+  terminAnzahl: number;
+  anbieterAnzahl: number;
+}
+
+export interface LeistungsDaten {
+  name: string;
+  description?: string;
+  durationMinutes: number;
+  bufferMinutes?: number;
+  /** Ganzzahlige Cent, nie Kommazahlen (E-08). */
+  priceCents: number;
+  sortOrder?: number;
 }
 
 export interface Profil {
@@ -111,4 +136,19 @@ export const api = {
 
   /** Eigenes Profil. Liefert auch die Rolle, nach der sich die Navigation richtet. */
   profil: () => anfrage<Profil>('/me'),
+
+  leistungen: {
+    liste: () => anfrage<Leistung[]>('/admin/services'),
+
+    anlegen: (daten: LeistungsDaten) =>
+      anfrage<Leistung>('/admin/services', { method: 'POST', body: JSON.stringify(daten) }),
+
+    aendern: (id: string, daten: Partial<LeistungsDaten> & { isActive?: boolean }) =>
+      anfrage<Leistung>(`/admin/services/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(daten),
+      }),
+
+    loeschen: (id: string) => anfrage<void>(`/admin/services/${id}`, { method: 'DELETE' }),
+  },
 };
