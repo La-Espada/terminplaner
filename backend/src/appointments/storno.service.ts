@@ -188,6 +188,99 @@ export class StornoService {
   }
 
   /**
+   * Als nicht erschienen vermerken.
+   *
+   * Nur das Studio, und nur für einen Termin, dessen Zeit vorbei ist. Vorher
+   * wäre es eine Behauptung über die Zukunft — und der nächtliche Job würde
+   * sie ohnehin nicht wieder einfangen, weil er `NO_SHOW` nicht anfasst.
+   *
+   * Kein Weg zurück ist vorgesehen: Wer sich vertippt, kann den Termin wieder
+   * auf abgeschlossen setzen — dafür gibt es `zurueckNehmen`. Ein No-Show
+   * steht in der Statistik der Kundin, das darf nicht versehentlich hängen
+   * bleiben.
+   */
+  async nichtErschienen(
+    person: AngemeldetePerson,
+    terminId: string,
+    jetzt: Date = new Date(),
+  ): Promise<void> {
+    if (person.role === 'CUSTOMER') {
+      throw new ForbiddenException('Das kann nur das Studio vermerken.');
+    }
+
+    const termin = await this.prisma.appointment.findFirst({
+      where: {
+        id: terminId,
+        ...(person.role === 'STAFF' ? { staffId: person.staffProfileId ?? '' } : {}),
+      },
+      select: { id: true, status: true, endsAt: true },
+    });
+
+    if (termin === null) throw new NotFoundException('Termin nicht gefunden.');
+
+    if (termin.endsAt.getTime() > jetzt.getTime()) {
+      throw new ConflictException(
+        'Dieser Termin ist noch nicht vorbei. Erst danach lässt sich vermerken, ' +
+          'dass jemand nicht gekommen ist.',
+      );
+    }
+
+    if (termin.status.startsWith('CANCELLED')) {
+      throw new ConflictException(
+        'Dieser Termin wurde abgesagt. Wer absagt, erscheint nicht unentschuldigt.',
+      );
+    }
+
+    await this.prisma.appointment.update({
+      where: { id: terminId },
+      data: { status: AppointmentStatus.NO_SHOW },
+    });
+
+    await this.audit.protokolliere({
+      actorUserId: person.id,
+      action: AuditAktion.TERMIN_NICHT_ERSCHIENEN,
+      entityType: 'appointment',
+      entityId: terminId,
+      metadata: { vorher: termin.status, nachher: 'NO_SHOW' },
+    });
+
+    this.logger.log('Termin als nicht erschienen vermerkt');
+  }
+
+  /** Nimmt einen No-Show-Vermerk zurück. Nur das Studio. */
+  async zurueckNehmen(person: AngemeldetePerson, terminId: string): Promise<void> {
+    if (person.role === 'CUSTOMER') {
+      throw new ForbiddenException('Das kann nur das Studio ändern.');
+    }
+
+    const termin = await this.prisma.appointment.findFirst({
+      where: {
+        id: terminId,
+        status: AppointmentStatus.NO_SHOW,
+        ...(person.role === 'STAFF' ? { staffId: person.staffProfileId ?? '' } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (termin === null) {
+      throw new NotFoundException('Es gibt keinen solchen Vermerk.');
+    }
+
+    await this.prisma.appointment.update({
+      where: { id: terminId },
+      data: { status: AppointmentStatus.COMPLETED },
+    });
+
+    await this.audit.protokolliere({
+      actorUserId: person.id,
+      action: AuditAktion.TERMIN_NICHT_ERSCHIENEN,
+      entityType: 'appointment',
+      entityId: terminId,
+      metadata: { vorher: 'NO_SHOW', nachher: 'COMPLETED' },
+    });
+  }
+
+  /**
    * Lädt den Termin und prüft Zugriff und Zustand.
    *
    * Ein fremder Termin liefert `404`, nicht `403`. Ein `403` verriete, dass es

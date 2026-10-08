@@ -1,7 +1,11 @@
 # Fortschritt
 
-Kurzes Arbeitsprotokoll. Nach jeder Sitzung eine Zeile: was fertig ist, was als Nächstes
-dran ist. Die Schrittnummern beziehen sich auf [docs/UMSETZUNG.md](docs/UMSETZUNG.md).
+Arbeitsprotokoll. Nach jeder Sitzung: was fertig ist, was als Nächstes dran ist. Die
+Schrittnummern beziehen sich auf [docs/UMSETZUNG.md](docs/UMSETZUNG.md).
+
+**Stand 2026-10-08: Schritt 1 bis 26 fertig, Meilenstein B erreicht, 332 Tests grün.**
+Der Überblick steht unter [Wo das Projekt steht](#wo-das-projekt-steht), der Einstieg nach
+einer Pause unter [Wieder einsteigen](#wieder-einsteigen).
 
 ---
 
@@ -158,18 +162,7 @@ wieder. Das Verwerfen gehört zur Buchung, also kommt beides zusammen in Schritt
 **Stufe 5 ist damit abgeschlossen.** Das System kann buchen, absagen, verschieben und
 nachbereiten — vollständig über die API. Was fehlt, ist die Oberfläche dafür.
 
-Zum Ausprobieren: Das Admin-Konto legt der Seed an, es verschwindet bei jedem Testlauf und
-wird so wiederhergestellt:
-
-```
-ADMIN_PASSWORD=dermazentrum-start-2026 npm run seed:admin --workspace @terminplaner/backend
-```
-
-Ein Konto zum Testen der Rolle `STAFF` steht **nicht** im Seed, und das soll so bleiben —
-es würde genau den Weg umgehen, den Schritt 18 eingeführt hat. Stattdessen unter `/team`
-eine Kosmetiker:in anlegen, die Einladung in Mailpit (http://localhost:8025) öffnen und das
-Passwort dort vergeben. Das dauert eine halbe Minute und prüft nebenbei, dass der ganze Weg
-noch funktioniert.
+Zum Ausprobieren siehe „Wieder einsteigen“ weiter unten.
 
 - [x] **Admin-Web mit Anmeldung** — Vite und React, Design-Tokens aus `docs/DESIGN.md`,
       Poppins lokal. Der Access-Token liegt nur im Speicher; nach dem Neuladen wird die
@@ -220,23 +213,171 @@ Constraint würde den Kalender unbenutzbar machen.
 
 Testlauf (`npm test --workspace @terminplaner/backend`):
 
-| Test                                                 | Ergebnis          |
-| ---------------------------------------------------- | ----------------- |
-| 50 gleichzeitige Einfügungen, genau eine kommt durch | grün              |
-| gleichzeitig bei verschiedenen Kosmetiker:innen      | grün              |
-| Buchungsdienst (Schritt 22)                          | erwarteter Fehler |
+| Test                                                 | Ergebnis |
+| ---------------------------------------------------- | -------- |
+| 50 gleichzeitige Einfügungen, genau eine kommt durch | grün     |
+| gleichzeitig bei verschiedenen Kosmetiker:innen      | grün     |
+| dasselbe über den Buchungsdienst, 49-mal `409`       | grün     |
 
-Der dritte Test ist als erwarteter Fehlschlag markiert. Sobald der Buchungsdienst
-existiert, schlägt er _unerwartet ins Grüne_ um und bricht den Testlauf — genau dann,
-wenn die echten Zusicherungen geschrieben werden müssen.
+Der dritte stand bis Schritt 22 als _absichtlich roter_ Platzhalter hier und erinnerte bei
+jedem Testlauf daran, was noch fehlt. Seit Schritt 22 trägt er die Zusicherungen, die er
+verlangt hat.
+
+### Stufe 6 — Admin-Kalender
+
+- [x] **25. Kalenderansicht** — Tag, Woche, Monat unter `/kalender`. Die Tagesansicht ist
+      die eigentliche Arbeitsansicht: eine Spalte je Kosmetiker:in, denn die Frage am
+      Telefon lautet „wer ist wann frei". Der Monat zeigt bewusst keine Uhrzeiten, sondern
+      Anzahlen — bei 30 Tagen wäre jede Kachel zu klein zum Lesen, und die Frage im Monat
+      ist „wie voll ist es".
+
+      Arbeitszeiten und Abwesenheiten liegen als Hintergrund im Raster. Ohne sie sieht
+      ein leerer Kalender am Feiertag genauso aus wie an einem vollen Arbeitstag, an dem
+      nur nichts gebucht ist. Die Aufräumzeit erscheint als eigener, schwächerer Streifen
+      nach dem Termin — sie blockiert den Kalender, aber die Kundin hat sie nicht gebucht.
+
+      **`STAFF` sieht nur sich selbst**, und zwar schon in der Abfrage: Der Filterwunsch
+      des Clients kann nur weiter einschränken, nie erweitern. Fragt Anna nach Beas
+      Spalte, bekommt sie ihre eigene.
+
+      Die ganze Zeitrechnung der Oberfläche läuft über `Intl` in der Studio-Zeitzone, nicht
+      über `getHours()`. Wer den Kalender aus dem Urlaub aufruft, soll trotzdem die Wiener
+      Wanduhr sehen.
+
+- [x] **26. Termine verwalten** — Umbuchen per Maus mit Rückfrage, absagen mit
+      Kategorie, „nicht erschienen" vermerken und wieder zurücknehmen, Termin am Telefon
+      anlegen.
+
+      Gezogen wird nur innerhalb derselben Spalte: Die Person zu wechseln ist eine andere
+      Entscheidung als die Zeit zu wechseln und kann an der Leistungszuordnung scheitern.
+      Die Rückfrage vor dem Verschieben ist keine Zeremonie — ein Griff daneben
+      verschiebt den Termin einer Kundin, die darauf wartet.
+
+      Weil Ziehen mit der Tastatur nicht geht, steht in der Terminkarte zusätzlich ein
+      Feld für Datum und Uhrzeit. Dieselbe Prüfung, derselbe Weg.
+
+      „Nicht erschienen" geht erst, wenn der Termin vorbei ist — vorher wäre es eine
+      Behauptung über die Zukunft — und nicht bei abgesagten Terminen: Wer absagt,
+      erscheint nicht unentschuldigt.
+
+      Die Kundensuche für die Telefonbuchung ist **Suche, keine Liste**: mindestens drei
+      Zeichen, höchstens zehn Treffer, kein Personal. Eine durchblätterbare Kundenliste
+      wäre ein Verzeichnis aller Patientinnen der Praxis, abrufbar von jedem angemeldeten
+      Gerät. Die Vollliste kommt in Schritt 48 — dann mit Protokollierung.
+
+      Beim Buchen am Telefon gilt die Vorlaufzeit nicht. Sie schützt davor, dass jemand
+      für in zehn Minuten bucht, ohne dass das Studio davon weiß; ruft die Kundin an und
+      das Studio sagt ja, ist genau diese Entscheidung gefallen. Protokolliert wird dabei,
+      **wer gehandelt hat** — sonst stünde im Protokoll, die Kundin habe selbst gebucht.
+
+> ### Meilenstein B erreicht — erster ausrollbarer Stand
+>
+> Ab hier kann das Studio das System produktiv nutzen: Termine am Telefon annehmen,
+> digital führen, verschieben, absagen. Die Kundschaft braucht dafür noch nichts — die
+> App kommt in Stufe 7. `UMSETZUNG.md` nennt das den wichtigsten Punkt der ganzen
+> Reihenfolge: Wenn das Projekt hier stillstünde, hätte das Studio trotzdem ein
+> funktionierendes Terminbuch.
+
+## Wo das Projekt steht
+
+**26 von 56 Schritten, Stufe 1 bis 6 abgeschlossen, Meilenstein B erreicht.**
+332 Tests grün, kein erwarteter Fehlschlag mehr offen.
+
+| Stufe                         | Schritte | Stand                          |
+| ----------------------------- | -------- | ------------------------------ |
+| 1 Fundament                   | 1–6      | fertig                         |
+| 2 Authentifizierung           | 7–16     | fertig                         |
+| 3 Admin-Web Grundgerüst       | —        | fertig (vorgezogen)            |
+| 4 Stammdaten                  | 17–20    | fertig — **Meilenstein A**     |
+| 5 Buchung                     | 21–24    | fertig                         |
+| 6 Admin-Kalender              | 25–26    | fertig — **Meilenstein B**     |
+| 7 Mobile App                  | 27–31    | offen                          |
+| 8 Benachrichtigungen          | 32–37    | offen, ab 34 extern blockiert  |
+| 9 Behandlungsnotizen (Art. 9) | 38–44    | offen, **rechtlich blockiert** |
+| 10 DSGVO-Werkzeuge            | 45–49    | offen                          |
+| 11 Produktionsreife           | 50–56    | offen, extern blockiert        |
+
+**Was das System heute kann:** Das Studio richtet sich vollständig selbst ein —
+Leistungen, Team, wer was anbietet, Arbeitszeiten, Abwesenheiten. Es rechnet freie Zeiten
+korrekt aus, inklusive beider Zeitumstellungen. Termine lassen sich buchen, verschieben,
+absagen und nachbereiten, über die API und über den Kalender im Admin-Web.
+
+**Was fehlt:** Die App für die Kundschaft, Benachrichtigungen, Behandlungsnotizen und
+alles, was zum Produktivgang gehört.
+
+---
 
 ## Als Nächstes
 
-**Stufe 2 — Authentifizierung.** Reine Backend-Arbeit, getestet mit einem HTTP-Client.
+**Schritt 27 — Expo-Projekt.** Der Einstieg in Stufe 7. Das Backend ist fertig dafür: Die
+App braucht `GET /services`, `GET /services/:id/staff`, `GET /availability` und
+`POST /appointments`, und alle vier stehen und sind öffentlich beziehungsweise für
+Kundinnen offen.
 
-Noch offen aus Schritt 7: **Branch-Schutz auf GitHub** einrichten, damit ein roter
-Durchlauf den Merge tatsächlich blockiert. Das geht nur in den Repository-Einstellungen,
-nicht aus dem Code heraus.
+Der Abnahmesatz lautet „Die App startet im Simulator und auf einem echten Gerät". Den
+zweiten Teil kann ich nicht prüfen — dafür braucht es ein Telefon in deiner Hand. Im
+Browser lässt sie sich bauen und bedienen.
+
+### Drei Entscheidungen, die vor Stufe 9 fallen müssen
+
+1. **Die Praxisfrage** (siehe `docs/CHECKLISTE.md`, ganz oben). Das Dermazentrum ist eine
+   Arztpraxis, keine Kosmetikfirma. Ärztliche Verschwiegenheitspflicht,
+   Patientendokumentation und deren Aufbewahrungsfristen gelten zusätzlich zur DSGVO und
+   stehen in der bisherigen Planung nicht drin. **Das blockiert Stufe 9 vollständig.**
+2. **Ein Verschlüsselungsschlüssel oder einer pro Person** (Schritt 39). Ein globaler
+   Schlüssel schließt Crypto-Shredding dauerhaft aus — man kann ihn nicht für eine
+   einzelne Person vernichten, und damit bleiben Gesundheitsdaten einer gelöschten Person
+   in jedem Backup lesbar.
+3. **Kundin wird Mitarbeiterin.** In einer Hautarztpraxis der erwartbare Fall, und heute
+   nicht abbildbar — eine Adresse, ein Konto. Die drei möglichen Wege stehen mit ihren
+   Haken in `docs/CHECKLISTE.md`.
+
+### Was ich ohne dich nicht fertig bekomme
+
+| Was                               | Ab Schritt | Warum                                  |
+| --------------------------------- | ---------- | -------------------------------------- |
+| Apple- und Google-Developer-Konto | 34         | kostet Geld, läuft auf deine Identität |
+| EU-Mailanbieter                   | 33         | Vertrag und Zugangsdaten               |
+| Freigabe der DSFA                 | 38         | Unterschrift des Verantwortlichen      |
+| Server, Domain, Backup-Restore    | 50         | deine Infrastruktur, dein Budget       |
+| Echtes Gerät, Beta-Tester         | 27, 55     | brauchen Menschen                      |
+
+## Wieder einsteigen
+
+Nach einer Pause in dieser Reihenfolge:
+
+```bash
+net start com.docker.service      # in einer Administrator-cmd, dann Docker Desktop starten
+docker compose up -d              # im Projektwurzelverzeichnis
+npm run dev --workspace @terminplaner/backend      # Port 3000
+npm run dev --workspace @terminplaner/web-admin    # Port 5173
+```
+
+Das Admin-Konto legt der Seed an. Es verschwindet bei **jedem** Testlauf, weil die Tests
+die Datenbank leeren — danach so wiederherstellen:
+
+```bash
+ADMIN_PASSWORD=dermazentrum-start-2026 npm run seed:admin --workspace @terminplaner/backend
+```
+
+Ein Konto für die Rolle `STAFF` steht bewusst **nicht** im Seed — es würde genau den Weg
+umgehen, den Schritt 18 eingeführt hat. Stattdessen unter `/team` eine Kosmetiker:in
+anlegen, die Einladung in Mailpit (http://localhost:8025) öffnen und das Passwort dort
+vergeben. Das dauert eine halbe Minute und prüft nebenbei, dass der Weg noch funktioniert.
+
+Damit im Kalender etwas zu sehen ist, braucht es ausserdem: eine Leistung, deren Zuordnung
+zu dieser Person, Arbeitszeiten, und eine Kundin (die sich über `POST /auth/register`
+selbst anlegt, Bestätigungsmail ebenfalls in Mailpit).
+
+Tests laufen gegen **dieselbe** Datenbank wie die Entwicklung — der Überschneidungsschutz
+lässt sich nur gegen echtes PostgreSQL prüfen, nicht gegen eine Attrappe:
+
+```bash
+npm test --workspace @terminplaner/backend
+```
+
+**Niemals `taskkill /IM node.exe`** — Docker Desktop läuft selbst auf Node und wird dabei
+mit beendet. Prozesse gezielt über ihre PID.
 
 ## Offen, blockiert nichts sofort
 
@@ -244,6 +385,13 @@ nicht aus dem Code heraus.
   in einer Administrator-cmd `net start com.docker.service`, dann Docker Desktop starten.
 - Die alten Repos `terminplaner-backend`, `terminplaner-web-admin`, `terminplaner-mobile`
   und `terminplaner-api-contract` existieren noch auf GitHub und werden nicht gebraucht.
+- **Branch-Schutz ist eingerichtet**, aber nicht überprüft. Beim Push meldet GitHub
+  „2 of 2 required status checks are expected" und lässt ihn trotzdem durch — als
+  Repository-Inhaber darf man an der Regel vorbei. Ob ein roter Durchlauf einen Merge
+  über einen Pull Request wirklich blockiert, ist damit **nicht** nachgewiesen. Das zeigt
+  sich erst beim ersten absichtlich roten PR.
+- Der CI-Durchlauf auf GitHub wurde noch nie angesehen — `gh` ist auf diesem Rechner nicht
+  installiert. Dass die Tests lokal grün sind, heißt nicht, dass sie es dort auch sind.
 - `npm audit` meldet vier Einträge mit hoher Einstufung, alle am `prisma`-CLI und damit
   reine Entwicklungsabhängigkeit. Bewusst akzeptiert, Begründung in E-23.
 

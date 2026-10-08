@@ -69,6 +69,7 @@ export class BookingService {
     kundinId: string,
     wunsch: BuchungsWunsch,
     jetzt: Date = new Date(),
+    handelnderUserId?: string,
   ): Promise<Buchung> {
     const start = new Date(wunsch.startsAt);
     if (Number.isNaN(start.getTime())) {
@@ -119,13 +120,16 @@ export class BookingService {
       });
 
       await this.audit.protokolliere({
-        actorUserId: kundinId,
+        // Wer gehandelt hat, nicht fuer wen. Bucht das Studio am Telefon,
+        // stuende sonst im Protokoll, die Kundin habe selbst gebucht.
+        actorUserId: handelnderUserId ?? kundinId,
         action: AuditAktion.TERMIN_GEBUCHT,
         entityType: 'appointment',
         entityId: angelegt.id,
         metadata: {
           serviceId: leistung.id,
           staffId: person.id,
+          customerId: kundinId,
           startsAt: angelegt.startsAt.toISOString(),
           status: angelegt.status,
         },
@@ -160,6 +164,46 @@ export class BookingService {
       }
       throw fehler;
     }
+  }
+
+  /**
+   * Buchung durch das Studio im Namen einer Kundin.
+   *
+   * Der häufigste Fall überhaupt — die meisten Termine entstehen am Telefon.
+   * Zwei Unterschiede zur Selbstbuchung:
+   *
+   * - **Die Vorlaufzeit gilt nicht.** Sie schützt davor, dass jemand für in
+   *   zehn Minuten bucht, ohne dass das Studio davon weiß. Ruft die Kundin an
+   *   und das Studio sagt ja, ist genau die Entscheidung gefallen, welche die
+   *   Vorlaufzeit ersetzen sollte.
+   * - **Protokolliert wird, wer gehandelt hat**, nicht für wen. Sonst stünde
+   *   im Protokoll, die Kundin habe selbst gebucht.
+   *
+   * Die Prüfung, ob der Slot frei ist, bleibt unverändert. Das Studio darf
+   * kurzfristig buchen, aber nicht doppelt.
+   */
+  async buchenFuer(
+    handelnderUserId: string,
+    kundinId: string,
+    wunsch: BuchungsWunsch,
+    jetzt: Date = new Date(),
+  ): Promise<Buchung> {
+    const kundin = await this.prisma.user.findFirst({
+      where: { id: kundinId, role: 'CUSTOMER', status: 'ACTIVE' },
+      select: { id: true },
+    });
+
+    if (kundin === null) throw new NotFoundException('Kundin nicht gefunden.');
+
+    // Die Vorlaufzeit aushebeln, indem der Pruefzeitpunkt weit genug
+    // zurueckgelegt wird. Ehrlicher, als sie in der Slot-Berechnung
+    // abschaltbar zu machen — dort gehoert sie hin und soll dort nicht
+    // wackeln.
+    const ohneVorlauf = new Date(
+      Math.min(jetzt.getTime(), new Date(wunsch.startsAt).getTime() - 1),
+    );
+
+    return this.buchen(kundin.id, wunsch, ohneVorlauf, handelnderUserId);
   }
 
   /**

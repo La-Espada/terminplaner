@@ -11,6 +11,7 @@ export const AuditAktion = {
   TERMIN_GEBUCHT: 'APPOINTMENT_CREATED',
   TERMIN_STORNIERT: 'APPOINTMENT_CANCELLED',
   TERMIN_VERSCHOBEN: 'APPOINTMENT_RESCHEDULED',
+  TERMIN_NICHT_ERSCHIENEN: 'APPOINTMENT_NO_SHOW',
 } as const;
 
 export type AuditAktion = (typeof AuditAktion)[keyof typeof AuditAktion];

@@ -22,7 +22,7 @@ export interface MenuPunkt {
  */
 export const MENUE: readonly MenuPunkt[] = [
   { pfad: '/', titel: 'Übersicht' },
-  { pfad: '/kalender', titel: 'Kalender', kommtNoch: true },
+  { pfad: '/kalender', titel: 'Kalender' },
   { pfad: '/termine', titel: 'Termine', kommtNoch: true },
   { pfad: '/leistungen', titel: 'Leistungen', rollen: ['ADMIN'] },
   { pfad: '/team', titel: 'Kosmetiker:innen', rollen: ['ADMIN'] },

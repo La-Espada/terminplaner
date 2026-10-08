@@ -218,7 +218,7 @@ also Feiertag oder Betriebsurlaub.
 **Fertig, wenn:** Arbeitszeiten inklusive Mittagspause sind pflegbar, ein studioweiter
 Feiertag lässt sich mit einem Eintrag für alle setzen.
 
-> **Meilenstein A:** Das Studio kann sich vollständig selbst konfigurieren.
+> **Meilenstein A:** Das Studio kann sich vollständig selbst konfigurieren. Erreicht am 2026-10-08.
 
 ---
 
@@ -273,7 +273,7 @@ im Namen einer Kundin anlegen.
 **Fertig, wenn:** Ein Termin lässt sich per Maus verschieben, der Konflikt beim Verschieben
 auf einen belegten Slot wird sauber abgefangen.
 
-> **Meilenstein B — erster ausrollbarer Stand.**
+> **Meilenstein B — erster ausrollbarer Stand. Erreicht am 2026-10-08.**
 > Ab hier kann das Studio das System bereits produktiv nutzen: Termine am Telefon annehmen
 > und digital verwalten. Wenn du an dieser Stelle pausieren musst, hast du trotzdem etwas
 > Fertiges abgeliefert. Das ist der wichtigste Punkt der ganzen Reihenfolge.

@@ -9,6 +9,7 @@ import { NurAbgemeldet, NurAngemeldet, NurRollen } from './routen/Schutz';
 import { Abwesenheiten } from './seiten/Abwesenheiten';
 import { Anmeldung } from './seiten/Anmeldung';
 import { Einladung } from './seiten/Einladung';
+import { Kalender } from './seiten/Kalender';
 import { Leistungen } from './seiten/Leistungen';
 import { Team } from './seiten/Team';
 import { Wochenplan } from './seiten/Wochenplan';
@@ -45,6 +46,7 @@ export function App() {
             <Route element={<NurAngemeldet />}>
               <Route element={<Rahmen />}>
                 <Route index element={<Uebersicht />} />
+                <Route path="/kalender" element={<Kalender />} />
 
                 <Route element={<NurRollen rollen={['ADMIN']} />}>
                   <Route path="/leistungen" element={<Leistungen />} />

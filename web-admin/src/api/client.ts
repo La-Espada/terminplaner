@@ -181,6 +181,45 @@ export interface AbwesenheitsDaten {
   bisZeit?: string;
 }
 
+export type TerminStatus =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'CANCELLED_BY_CUSTOMER'
+  | 'CANCELLED_BY_STAFF'
+  | 'COMPLETED'
+  | 'NO_SHOW';
+
+export type AbsageGrund = 'STAFF_UNAVAILABLE' | 'CUSTOMER_REQUEST' | 'OPERATIONAL' | 'SONSTIGES';
+
+export interface KalenderTermin {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  /** Ende einschliesslich Aufraeumzeit. Blockiert den Kalender, ist aber kein Termin. */
+  blockiertBis: string;
+  status: TerminStatus;
+  priceCents: number;
+  service: { id: string; name: string; durationMinutes: number; bufferMinutes: number };
+  staff: { id: string; displayName: string; colorHex: string | null };
+  customer: { id: string; vorname: string; nachname: string; telefon: string | null };
+}
+
+export interface KalenderAbwesenheit {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  /** `null` bedeutet studioweit. */
+  staffId: string | null;
+  type: string;
+}
+
+export interface Kalenderblatt {
+  termine: KalenderTermin[];
+  abwesenheiten: KalenderAbwesenheit[];
+  staff: Array<{ id: string; displayName: string; colorHex: string | null; isActive: boolean }>;
+  arbeitszeiten: Array<{ staffId: string; weekday: number; von: string; bis: string }>;
+}
+
 export interface Profil {
   id: string;
   email: string;
@@ -236,7 +275,19 @@ export const api = {
       }),
 
     loeschen: (id: string) => anfrage<void>(`/admin/services/${id}`, { method: 'DELETE' }),
+
+    /** Wer bietet diese Leistung an. Oeffentlich, dieselbe Quelle wie in der App. */
+    anbieter: (serviceId: string) =>
+      anfrage<Array<{ id: string; displayName: string; bio: string | null }>>(
+        `/services/${serviceId}/staff`,
+      ),
   },
+
+  /** Freie Zeiten. Dieselbe Berechnung, die auch die App benutzt. */
+  slots: (serviceId: string, staffId: string, tag: string) =>
+    anfrage<Array<{ startsAt: string; endsAt: string }>>(
+      `/availability?serviceId=${serviceId}&staffId=${staffId}&from=${tag}&to=${tag}`,
+    ),
 
   team: {
     liste: () => anfrage<Kosmetikerin[]>('/admin/staff'),
@@ -307,6 +358,60 @@ export const api = {
       }),
 
     loeschen: (id: string) => anfrage<void>(`/admin/abwesenheiten/${id}`, { method: 'DELETE' }),
+  },
+
+  kalender: {
+    blatt: (von: string, bis: string, staffId?: string) =>
+      anfrage<Kalenderblatt>(
+        `/admin/kalender?von=${von}&bis=${bis}` +
+          (staffId !== undefined && staffId !== '' ? `&staffId=${staffId}` : ''),
+      ),
+  },
+
+  termine: {
+    stornieren: (id: string, grund?: AbsageGrund) =>
+      anfrage<void>(`/appointments/${id}/storno`, {
+        method: 'POST',
+        body: JSON.stringify(grund === undefined ? {} : { grund }),
+      }),
+
+    verschieben: (id: string, startsAt: string) =>
+      anfrage<{ startsAt: string; endsAt: string }>(`/appointments/${id}/verschieben`, {
+        method: 'POST',
+        body: JSON.stringify({ startsAt }),
+      }),
+
+    nichtErschienen: (id: string) =>
+      anfrage<void>(`/admin/kalender/termine/${id}/nicht-erschienen`, {
+        method: 'POST',
+        body: '{}',
+      }),
+
+    vermerkZuruecknehmen: (id: string) =>
+      anfrage<void>(`/admin/kalender/termine/${id}/nicht-erschienen`, { method: 'DELETE' }),
+
+    /** Kundensuche fuer die Buchung am Telefon. Mindestens drei Zeichen. */
+    kundinnenSuchen: (suchtext: string) =>
+      anfrage<
+        Array<{
+          id: string;
+          vorname: string;
+          nachname: string;
+          email: string;
+          telefon: string | null;
+        }>
+      >(`/admin/kalender/kundensuche?q=${encodeURIComponent(suchtext)}`),
+
+    buchenFuer: (daten: {
+      customerId: string;
+      serviceId: string;
+      staffId: string;
+      startsAt: string;
+    }) =>
+      anfrage<{ id: string; startsAt: string }>('/admin/kalender/termine', {
+        method: 'POST',
+        body: JSON.stringify(daten),
+      }),
   },
 
   /**
