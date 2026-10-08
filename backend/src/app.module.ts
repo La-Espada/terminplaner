@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { envValidationSchema } from './config/env.validation';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { ArbeitszeitenModule } from './arbeitszeiten/arbeitszeiten.module';
@@ -25,6 +26,9 @@ import { ZuordnungModule } from './zuordnung/zuordnung.module';
       // @nestjs/config 12 erwartet ein Standard-Schema. Joi 18 erfüllt das.
       validationSchema: envValidationSchema,
     }),
+    // Zeitgesteuerte Jobs: Nachbereitung (24), spaeter Erinnerungen (35)
+    // und Aufbewahrungsfristen (47).
+    ScheduleModule.forRoot(),
     PrismaModule,
     ThrottlingModule,
     MailModule,

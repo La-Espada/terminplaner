@@ -150,6 +150,13 @@ wieder. Das Verwerfen gehört zur Buchung, also kommt beides zusammen in Schritt
 - [x] **Zugriffsprotokoll** als eigener Dienst. Schreibt jede Änderung an einem Termin
       mit, hält aber niemals den Vorgang auf: Eine Lücke im Protokoll ist der kleinere
       Schaden als ein Studio, das wegen einer vollen Festplatte nicht mehr arbeiten kann.
+- [x] **24. Nachbereitungsjob** — nächtlich um drei, vergangene bestätigte Termine auf
+      `COMPLETED`. Er fässt bewusst nichts anderes an: `NO_SHOW` stellt ein Mensch fest,
+      und ein unbestätigter Termin hat nicht stattgefunden. Mehrfaches Ausführen ändert
+      nichts.
+
+**Stufe 5 ist damit abgeschlossen.** Das System kann buchen, absagen, verschieben und
+nachbereiten — vollständig über die API. Was fehlt, ist die Oberfläche dafür.
 
 Zum Ausprobieren: Das Admin-Konto legt der Seed an, es verschwindet bei jedem Testlauf und
 wird so wiederhergestellt:

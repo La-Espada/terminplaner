@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { VerfuegbarkeitModule } from '../verfuegbarkeit/verfuegbarkeit.module';
 import { AppointmentsController } from './appointments.controller';
 import { BookingService } from './booking.service';
+import { NachbereitungService } from './nachbereitung.service';
 import { StornoService } from './storno.service';
 
 @Module({
@@ -10,7 +11,7 @@ import { StornoService } from './storno.service';
   // der Zeit auseinander.
   imports: [VerfuegbarkeitModule],
   controllers: [AppointmentsController],
-  providers: [BookingService, StornoService],
-  exports: [BookingService, StornoService],
+  providers: [BookingService, StornoService, NachbereitungService],
+  exports: [BookingService, StornoService, NachbereitungService],
 })
 export class AppointmentsModule {}
