@@ -47,6 +47,7 @@ gültig, dreh sie um — aber trag die Änderung hier ein, mit Datum.
 | [E-30](#e-30) | Personal wird eingeladen, nicht mit Passwort angelegt | 2026-10-07 | gültig       |
 | [E-31](#e-31) | Leistung ohne Anbieterin ist oeffentlich unsichtbar   | 2026-10-08 | gueltig      |
 | [E-32](#e-32) | Keine eigenen Studio-Oeffnungszeiten                  | 2026-10-08 | gueltig      |
+| [E-33](#e-33) | Festlegungen der Slot-Berechnung                      | 2026-10-08 | gueltig      |
 
 ---
 
@@ -733,6 +734,51 @@ an.
 **Woran man merkt, dass die Entscheidung falsch war:** Wenn das Studio anfängt, eine
 Pseudo-Person "Studio" anzulegen, nur um dort Öffnungszeiten zu hinterlegen. Dann fehlt
 der Begriff wirklich.
+
+---
+
+## E-33
+
+### Die vier strittigen Festlegungen der Slot-Berechnung
+
+**Datum:** 2026-10-08 · **Status:** gültig
+
+Der vollständige Katalog steht in [SLOT-TESTFAELLE.md](SLOT-TESTFAELLE.md). Hier nur die
+vier Punkte, bei denen die Gegenvariante vertretbar gewesen wäre — damit später
+nachvollziehbar ist, dass sie bedacht wurde.
+
+**1. Der Puffer muss nicht mehr ins Arbeitsfenster passen.** Ein Termin 16:00–17:00 bei
+Arbeitsende 17:00 ist erlaubt, obwohl der Puffer bis 17:15 reichte. Die Gegenvariante
+sträche den letzten Slot jedes Tages und köstete über ein Jahr gerechnet rund 250 buchbare
+Stunden. Aufräumen nach Feierabend ist zumutbar, eine strukturell blockierte letzte Stunde
+nicht.
+
+**2. Blockiert wird nach Negativliste.** Alles ausser `CANCELLED_BY_CUSTOMER` und
+`CANCELLED_BY_STAFF` blockiert — auch `COMPLETED` und `NO_SHOW`, die fachlich immer in der
+Vergangenheit liegen. Das ist strenger als der `EXCLUDE`-Constraint (E-07), der nur
+`PENDING` und `CONFIRMED` kennt, und das ist die harmlose Richtung. Die gefährliche wäre
+die andere: Bietet die Slot-Berechnung mehr an als der Constraint zulässt, endet jede
+Buchung darauf in `409`, der Client lädt neu, sieht denselben Slot wieder und läuft in eine
+Schleife. Eine Positivliste wäre ausserdem die Falle, dass ein später ergänzter Status
+stillschweigend aus der Blockade fällt.
+
+**3. Das Raster hängt an der Ortszeit-Mitternacht, nicht am Fensteranfang.** Wäre es am
+Fensteranfang ausgerichtet, führte eine Abwesenheit, die um 11:20 endet, zu den
+Startzeiten 11:20, 11:35, 11:50 — für die Kundin unerklärlich und von Tag zu Tag
+verschieden.
+
+**4. Aneinandergrenzende Arbeitszeiten werden zusammengefasst.** Trägt das Studio 9–12 und
+12–17 ein, ist das ein durchgehender Tag. Ohne Zusammenfassen entstünde an der Naht eine
+künstliche Grenze, und eine einstündige Behandlung um 11:30 wäre nicht buchbar, obwohl
+durchgearbeitet wird.
+
+**Konsequenz, die man im Blick behalten muss:** Der Puffer existiert nirgends als
+gespeicherter Wert und steht in keinem Constraint. Seine Einhaltung ist allein Sache der
+Anwendung — die Datenbank fängt einen Fehler dort nicht ab.
+
+**Woran man merkt, dass etwas falsch ist:** Wenn Buchungen auf angebotene Slots mit `409`
+scheitern. Dann sind Slot-Berechnung und Constraint auseinandergelaufen, und Punkt 2 ist
+der erste Ort zum Nachsehen.
 
 ---
 

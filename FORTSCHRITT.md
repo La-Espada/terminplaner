@@ -117,6 +117,20 @@ Am laufenden System geprüft:
 > **Meilenstein A erreicht:** Das Studio kann sich vollständig selbst konfigurieren —
 > Leistungen, Team, wer was anbietet, Arbeitszeiten und Abwesenheiten.
 
+### Stufe 5 — Buchung
+
+- [x] **21. Slot-Berechnung** — `GET /availability`. Der Engpass des Projekts, deshalb
+      zuerst der Testfallkatalog ([SLOT-TESTFAELLE.md](docs/SLOT-TESTFAELLE.md)), dann der
+      Code. Alle sechs Pflichtfälle plus sieben ergänzende sind als Test festgehalten,
+      darunter beide Umstellungstage. Die strittigen Festlegungen stehen in E-33.
+      Die Intervallarithmetik liegt als reine Funktionen in `src/zeit/intervalle.ts` —
+      Fehler darin verstecken sich sonst hinter Zeitzonen und Datenbankabfragen.
+
+**Noch nicht gebaut, bewusst:** Das Zwischenspeichern der Slots in Redis (PLAN.md 5.1).
+Ein Cache ohne die Stelle, die ihn verwirft, liefert veraltete Slots — und eine Buchung
+auf einen veralteten Slot endet in `409`, der Client lädt neu und sieht denselben Slot
+wieder. Das Verwerfen gehört zur Buchung, also kommt beides zusammen in Schritt 22.
+
 Zum Ausprobieren: Das Admin-Konto legt der Seed an, es verschwindet bei jedem Testlauf und
 wird so wiederhergestellt:
 
@@ -205,6 +219,15 @@ nicht aus dem Code heraus.
   und `terminplaner-api-contract` existieren noch auf GitHub und werden nicht gebraucht.
 - `npm audit` meldet vier Einträge mit hoher Einstufung, alle am `prisma`-CLI und damit
   reine Entwicklungsabhängigkeit. Bewusst akzeptiert, Begründung in E-23.
+
+## Beobachtet, nicht erklärt
+
+- **Ein Testlauf von dreien hatte vier Fehlschlaege, zwei waren gruen.** Am 2026-10-08,
+  direkt nach dem Hinzufuegen der Slot-Tests. Welche vier, habe ich nicht festgehalten —
+  der Lauf war vorbei, bevor die Namen gesichert waren. `fileParallelism: false` ist
+  gesetzt, die Dateien raeumen sich also nicht gegenseitig die Datenbank weg; die
+  naheliegende Erklaerung scheidet damit aus. Wiederholt hat es sich nicht. Beim naechsten
+  Auftreten die Namen der Faelle sichern, bevor etwas anderes laeuft.
 
 ## Stolpersteine, die schon geklärt sind
 

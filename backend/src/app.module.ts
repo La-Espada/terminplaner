@@ -11,6 +11,7 @@ import { ServicesModule } from './services/services.module';
 import { StaffModule } from './staff/staff.module';
 import { ThrottlingModule } from './throttling/throttling.module';
 import { UsersModule } from './users/users.module';
+import { VerfuegbarkeitModule } from './verfuegbarkeit/verfuegbarkeit.module';
 import { ZuordnungModule } from './zuordnung/zuordnung.module';
 
 @Module({
@@ -32,6 +33,7 @@ import { ZuordnungModule } from './zuordnung/zuordnung.module';
     StaffModule,
     ZuordnungModule,
     ArbeitszeitenModule,
+    VerfuegbarkeitModule,
     HealthModule,
   ],
 })

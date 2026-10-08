@@ -92,6 +92,8 @@ describe('Kosmetiker:innen', () => {
       id: string;
       userId: string;
       displayName: string;
+      bio: string | null;
+      colorHex: string | null;
       isActive: boolean;
       zugangAktiv: boolean;
       einladungOffen: boolean;
