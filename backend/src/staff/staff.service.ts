@@ -168,7 +168,7 @@ export class StaffService {
             role: 'STAFF',
             firstName: dto.firstName,
             lastName: dto.lastName,
-            phone: dto.phone ?? null,
+            phone: dto.phone || null,
             // Noch nicht bestätigt — das geschieht beim Einlösen der Einladung.
             emailVerifiedAt: null,
           },

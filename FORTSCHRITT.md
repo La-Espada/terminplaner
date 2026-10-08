@@ -103,6 +103,19 @@ Am laufenden System geprüft:
       man hier nach **Lücken** sucht; in zwei Detailansichten findet man die nie. Eine
       Leistung, die niemand anbietet, erscheint in der App nicht mehr (E-31) — und die
       Verwaltung sagt, warum.
+- [x] **20. Arbeitszeiten und Abwesenheiten** — Regelwoche je Person unter
+      `/arbeitszeiten`, Abwesenheiten unter `/arbeitszeiten/abwesenheiten`. Eine
+      Mittagspause sind zwei Zeilen, ein Feiertag ein Eintrag für alle. Überschneidungen
+      am selben Tag werden abgelehnt — ein doppelter Slot ist eine Doppelbuchung in spe.
+      Keine eigenen Studio-Öffnungszeiten (E-32).
+- [x] **Zeitzonenrechnung** als eigenes Fundament (`src/zeit/zeitzone.ts`). Der Versatz wird
+      **pro Zeitpunkt** bestimmt, nie einmal für einen Zeitraum: Der 25. Oktober 2026 hat in
+      Wien 25 Stunden, der 29. März 23. Beide Umstellungstage sind als Test festgehalten,
+      samt der Ortszeit, die es nicht gibt, und der, die es zweimal gibt. Schritt 21 baut
+      darauf auf.
+
+> **Meilenstein A erreicht:** Das Studio kann sich vollständig selbst konfigurieren —
+> Leistungen, Team, wer was anbietet, Arbeitszeiten und Abwesenheiten.
 
 Zum Ausprobieren: Das Admin-Konto legt der Seed an, es verschwindet bei jedem Testlauf und
 wird so wiederhergestellt:

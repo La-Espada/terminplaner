@@ -46,6 +46,7 @@ gültig, dreh sie um — aber trag die Änderung hier ein, mit Datum.
 | [E-29](#e-29) | Tailwind jetzt, shadcn/ui später                      | 2026-10-07 | gültig       |
 | [E-30](#e-30) | Personal wird eingeladen, nicht mit Passwort angelegt | 2026-10-07 | gültig       |
 | [E-31](#e-31) | Leistung ohne Anbieterin ist oeffentlich unsichtbar   | 2026-10-08 | gueltig      |
+| [E-32](#e-32) | Keine eigenen Studio-Oeffnungszeiten                  | 2026-10-08 | gueltig      |
 
 ---
 
@@ -698,6 +699,40 @@ diese Funktion.
 **Woran man merkt, dass die Entscheidung falsch war:** Wenn im Betrieb regelmäßig gefragt
 wird, warum eine Leistung in der App fehlt, obwohl sie aktiv ist. Dann ist nicht die Regel
 falsch, sondern der Hinweis zu leise.
+
+---
+
+## E-32
+
+### Keine eigene Entität für Studio-Öffnungszeiten
+
+**Datum:** 2026-10-08 · **Status:** gültig
+
+**Entscheidung:** `working_hours` je Kosmetiker:in ist die **einzige** Quelle dafür, wann
+gebucht werden kann. Eine zweite Entität für Öffnungszeiten des Studios gibt es nicht.
+Studioweite Schließungen — Feiertag, Betriebsurlaub — laufen über `time_off` mit
+`staff_id = NULL`.
+
+**Warum:** `PLAN.md` 5.1 sah ursprünglich vor, Öffnungszeiten **und** Arbeitszeiten
+abzuziehen. Beim Bau von Schritt 20 fiel auf, dass es die erste Entität nie gab — und dass
+das gut so ist. Zwei Quellen für dieselbe Frage müssen widerspruchsfrei gehalten werden,
+und sie werden es nie: Wer eine Kosmetikerin von 7 bis 19 einträgt, während das Studio von
+8 bis 18 geöffnet hat, bekommt stillschweigend beschnittene Zeiten und sucht den Fehler
+dann an der falschen Stelle. Mit einer Quelle ist die eingetragene Zeit die Wahrheit.
+
+Öffnungszeiten, wie sie auf der Website stehen, sind davon unberührt. Das ist eine Angabe
+für Menschen, keine Regel für den Kalender — und gehört deshalb nicht in dieses System.
+
+**Konsequenz:** "Alle arbeiten Mo–Fr 9–17" muss für jede Person eingetragen werden. Das
+wäre lästig, deshalb gibt es "Zeiten übernehmen von" — eine Bequemlichkeit in der
+Oberfläche statt einer zweiten Wahrheit in der Datenbank. Ein Feiertag dagegen wird
+weiterhin **einmal** eingetragen und gilt für alle; die Abfrage für eine einzelne Person
+liefert studioweite Einträge deshalb immer mit. Wer das versäumt, bietet Slots am 1. Mai
+an.
+
+**Woran man merkt, dass die Entscheidung falsch war:** Wenn das Studio anfängt, eine
+Pseudo-Person "Studio" anzulegen, nur um dort Öffnungszeiten zu hinterlegen. Dann fehlt
+der Begriff wirklich.
 
 ---
 

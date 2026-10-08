@@ -26,7 +26,7 @@ export const MENUE: readonly MenuPunkt[] = [
   { pfad: '/termine', titel: 'Termine', kommtNoch: true },
   { pfad: '/leistungen', titel: 'Leistungen', rollen: ['ADMIN'] },
   { pfad: '/team', titel: 'Kosmetiker:innen', rollen: ['ADMIN'] },
-  { pfad: '/arbeitszeiten', titel: 'Arbeitszeiten', kommtNoch: true },
+  { pfad: '/arbeitszeiten', titel: 'Arbeitszeiten', rollen: ['ADMIN'] },
   { pfad: '/kundinnen', titel: 'Kundinnen', kommtNoch: true },
   { pfad: '/auswertung', titel: 'Auswertung', rollen: ['ADMIN'], kommtNoch: true },
   { pfad: '/protokoll', titel: 'Zugriffsprotokoll', rollen: ['ADMIN'], kommtNoch: true },

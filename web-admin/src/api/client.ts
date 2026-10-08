@@ -147,6 +147,40 @@ export interface KosmetikerinDaten {
   colorHex?: string;
 }
 
+export interface Arbeitsspanne {
+  /** 0 = Sonntag bis 6 = Samstag. */
+  weekday: number;
+  /** `HH:mm` Ortszeit des Studios. */
+  von: string;
+  bis: string;
+}
+
+export type AbwesenheitsGrund =
+  'VACATION' | 'SICK' | 'TRAINING' | 'PUBLIC_HOLIDAY' | 'CLOSURE' | 'OTHER';
+
+export interface Abwesenheit {
+  id: string;
+  /** `null` bedeutet: gilt studioweit. */
+  staffId: string | null;
+  staffName: string | null;
+  type: AbwesenheitsGrund;
+  ganztags: boolean;
+  vonDatum: string;
+  vonZeit: string;
+  bisDatum: string;
+  bisZeit: string;
+}
+
+export interface AbwesenheitsDaten {
+  staffId?: string | null;
+  type: AbwesenheitsGrund;
+  ganztags: boolean;
+  vonDatum: string;
+  bisDatum: string;
+  vonZeit?: string;
+  bisZeit?: string;
+}
+
 export interface Profil {
   id: string;
   email: string;
@@ -246,6 +280,33 @@ export const api = {
         `/admin/zuordnung/${staffId}/${serviceId}${bestaetigt ? '?bestaetigt=true' : ''}`,
         { method: 'DELETE' },
       ),
+  },
+
+  arbeitszeiten: {
+    wochenplan: (staffId: string) => anfrage<Arbeitsspanne[]>(`/admin/arbeitszeiten/${staffId}`),
+
+    setzen: (staffId: string, spannen: Arbeitsspanne[]) =>
+      anfrage<Arbeitsspanne[]>(`/admin/arbeitszeiten/${staffId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ spannen }),
+      }),
+  },
+
+  abwesenheiten: {
+    /** Zeitraum ist Pflicht — ohne Grenzen wuerde die Abfrage mit den Jahren langsam. */
+    liste: (von: string, bis: string, staffId?: string) =>
+      anfrage<Abwesenheit[]>(
+        `/admin/abwesenheiten?von=${von}&bis=${bis}` +
+          (staffId !== undefined && staffId !== '' ? `&staffId=${staffId}` : ''),
+      ),
+
+    anlegen: (daten: AbwesenheitsDaten) =>
+      anfrage<Abwesenheit>('/admin/abwesenheiten', {
+        method: 'POST',
+        body: JSON.stringify(daten),
+      }),
+
+    loeschen: (id: string) => anfrage<void>(`/admin/abwesenheiten/${id}`, { method: 'DELETE' }),
   },
 
   /**

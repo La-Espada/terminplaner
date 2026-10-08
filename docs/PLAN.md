@@ -36,7 +36,7 @@ Drei Rollen, hierarchisch:
 - Vollzugriff auf alles
 - Kosmetiker:innen anlegen, bearbeiten, deaktivieren
 - Dienstleistungen (Services) und Preise pflegen
-- Öffnungszeiten und Feiertage des Studios pflegen
+- Arbeitszeiten, Feiertage und Betriebsurlaub pflegen
 - Alle Termine sehen, umbuchen, stornieren
 - Kundenkonten einsehen, sperren, löschen
 - Auswertungen (Auslastung, No-Show-Quote)
@@ -210,9 +210,11 @@ davon, was die Anwendungsschicht tut.
 
 Eingabe: `service_id`, `staff_id` (oder „egal"), Datumsbereich.
 
-1. Arbeitszeiten der Kosmetiker:in für die Tage laden (`working_hours`)
-2. Studio-Öffnungszeiten und Feiertage abziehen
-3. Abwesenheiten abziehen (`time_off`)
+1. Arbeitszeiten der Kosmetiker:in für die Tage laden (`working_hours`) — **die einzige
+   Quelle dafür, wann gebucht werden kann** (E-32)
+2. Studioweite Abwesenheiten abziehen: Feiertage und Betriebsurlaub, also `time_off` mit
+   `staff_id = NULL`
+3. Persönliche Abwesenheiten abziehen (`time_off` mit gesetzter `staff_id`)
 4. Bestehende Termine abziehen, inklusive `buffer_minutes` nach jedem Termin
 5. Verbleibende Zeitfenster in ein Raster schneiden (z. B. 15-Minuten-Schritte)
 6. Slots verwerfen, die kürzer als `duration_minutes` sind

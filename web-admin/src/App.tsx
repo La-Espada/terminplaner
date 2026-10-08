@@ -6,10 +6,12 @@ import { MENUE } from './layout/Navigation';
 import { NichtGefunden } from './routen/NichtGefunden';
 import { Platzhalter } from './routen/Platzhalter';
 import { NurAbgemeldet, NurAngemeldet, NurRollen } from './routen/Schutz';
+import { Abwesenheiten } from './seiten/Abwesenheiten';
 import { Anmeldung } from './seiten/Anmeldung';
 import { Einladung } from './seiten/Einladung';
 import { Leistungen } from './seiten/Leistungen';
 import { Team } from './seiten/Team';
+import { Wochenplan } from './seiten/Wochenplan';
 import { Zuordnung } from './seiten/Zuordnung';
 import { Uebersicht } from './seiten/Uebersicht';
 
@@ -48,6 +50,8 @@ export function App() {
                   <Route path="/leistungen" element={<Leistungen />} />
                   <Route path="/leistungen/zuordnung" element={<Zuordnung />} />
                   <Route path="/team" element={<Team />} />
+                  <Route path="/arbeitszeiten" element={<Wochenplan />} />
+                  <Route path="/arbeitszeiten/abwesenheiten" element={<Abwesenheiten />} />
                 </Route>
 
                 {/* Platzhalter für alles, was noch entsteht. Die Rollen hier
