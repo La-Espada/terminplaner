@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { ArbeitszeitenModule } from './arbeitszeiten/arbeitszeiten.module';
+import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { ConsentsModule } from './consents/consents.module';
 import { HealthModule } from './health/health.module';
@@ -27,6 +28,7 @@ import { ZuordnungModule } from './zuordnung/zuordnung.module';
     PrismaModule,
     ThrottlingModule,
     MailModule,
+    AuditModule,
     AuthModule,
     UsersModule,
     ConsentsModule,

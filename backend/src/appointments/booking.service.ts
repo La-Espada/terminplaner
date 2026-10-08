@@ -6,16 +6,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AppointmentStatus, Prisma } from '@prisma/client';
+import { AppointmentStatus } from '@prisma/client';
+import { AuditAktion, AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { VerfuegbarkeitService } from '../verfuegbarkeit/verfuegbarkeit.service';
 import { alsOrtszeit } from '../zeit/zeitzone';
-
-/** Name des Exclusion-Constraints aus der Migration `appointment_overlap_constraint`. */
-const UEBERSCHNEIDUNG = 'appointments_no_overlap';
-
-/** SQLSTATE für `exclusion_violation`. */
-const SQLSTATE_UEBERSCHNEIDUNG = '23P01';
+import { istUeberschneidung } from './ueberschneidung';
 
 export interface BuchungsWunsch {
   serviceId: string;
@@ -43,6 +39,7 @@ export class BookingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly verfuegbarkeit: VerfuegbarkeitService,
+    private readonly audit: AuditService,
     config: ConfigService,
   ) {
     this.zone = config.get<string>('STUDIO_TIMEZONE', 'Europe/Vienna');
@@ -121,6 +118,19 @@ export class BookingService {
         select: { id: true, startsAt: true, endsAt: true, status: true, priceCentsSnapshot: true },
       });
 
+      await this.audit.protokolliere({
+        actorUserId: kundinId,
+        action: AuditAktion.TERMIN_GEBUCHT,
+        entityType: 'appointment',
+        entityId: angelegt.id,
+        metadata: {
+          serviceId: leistung.id,
+          staffId: person.id,
+          startsAt: angelegt.startsAt.toISOString(),
+          status: angelegt.status,
+        },
+      });
+
       this.logger.log(`Termin gebucht, Status ${angelegt.status}`);
 
       return {
@@ -178,28 +188,4 @@ export class BookingService {
       );
     }
   }
-}
-
-/**
- * Erkennt die Verletzung des Überschneidungsschutzes.
- *
- * Prisma kennt keinen eigenen Fehlercode für Exclusion-Constraints — sie sind
- * ihm fremd, die Migration ist von Hand geschrieben. Geprüft wird deshalb auf
- * den SQLSTATE und, falls der nicht durchgereicht wird, auf den Namen des
- * Constraints. Beides zusammen, weil eine der beiden Quellen je nach
- * Treiberversion fehlen kann.
- */
-function istUeberschneidung(fehler: unknown): boolean {
-  if (fehler instanceof Prisma.PrismaClientKnownRequestError) {
-    const meta = JSON.stringify(fehler.meta ?? {});
-    if (meta.includes(UEBERSCHNEIDUNG) || meta.includes(SQLSTATE_UEBERSCHNEIDUNG)) return true;
-  }
-
-  if (fehler instanceof Error) {
-    return (
-      fehler.message.includes(UEBERSCHNEIDUNG) || fehler.message.includes(SQLSTATE_UEBERSCHNEIDUNG)
-    );
-  }
-
-  return false;
 }

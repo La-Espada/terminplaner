@@ -44,6 +44,15 @@ export interface SlotAnfrage {
   /** Kalendertage in Studio-Zeitzone, beide einschliesslich. */
   von: string;
   bis: string;
+  /**
+   * Diesen Termin beim Rechnen ignorieren.
+   *
+   * Gebraucht beim Verschieben: Soll ein Termin von 09:00 auf 09:15 ruecken,
+   * ueberlappt die neue Zeit mit der alten — und der Termin blockierte sich
+   * selbst. Ohne diese Ausnahme waere jede Verschiebung um weniger als eine
+   * Behandlungsdauer unmoeglich, und das ist genau der haeufigste Fall.
+   */
+  ohneTerminId?: string;
 }
 
 /** Ein Arbeitsfenster einer Person an einem Tag, bereits in UTC. */
@@ -125,6 +134,7 @@ export class VerfuegbarkeitService {
           status: { notIn: FREIGEBENDE_STATUS },
           startsAt: { lt: fensterEnde },
           endsAt: { gt: fensterBeginn },
+          ...(anfrage.ohneTerminId !== undefined ? { id: { not: anfrage.ohneTerminId } } : {}),
         },
         select: {
           staffId: true,

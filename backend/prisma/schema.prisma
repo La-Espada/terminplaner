@@ -277,6 +277,23 @@ model TimeOff {
 // Terminwesen
 // ============================================================
 
+/// Grund einer Absage. Kategorien statt Freitext, aus demselben Grund wie bei
+/// `TimeOffType` (E-12): In ein Freitextfeld schreibt das Personal
+/// erfahrungsgemaess "Patientin hat Ausschlag" — und damit entstuende ein
+/// Gesundheitsdatum in einer Spalte, die weder verschluesselt noch
+/// zugriffsprotokolliert ist.
+enum CancellationReason {
+  /// Die Behandlerin faellt aus.
+  STAFF_UNAVAILABLE
+  /// Die Kundin hat abgesagt, das Studio traegt es nach.
+  CUSTOMER_REQUEST
+  /// Doppelbelegung, Geraeteausfall, Umorganisation.
+  OPERATIONAL
+  SONSTIGES
+
+  @@map("cancellation_reason")
+}
+
 enum AppointmentStatus {
   PENDING
   CONFIRMED
@@ -309,8 +326,10 @@ model Appointment {
   /// nur bei erteilter HEALTH_DATA-Einwilligung erfassbar (E-14).
   customerNoteEncrypted Bytes? @map("customer_note_encrypted")
 
-  cancelledAt        DateTime? @map("cancelled_at") @db.Timestamptz(3)
-  cancellationReason String?   @map("cancellation_reason")
+  cancelledAt        DateTime?           @map("cancelled_at") @db.Timestamptz(3)
+  /// Grund der Absage als Kategorie, **nicht** als Freitext (E-35). Pflicht,
+  /// wenn das Studio absagt; bei einer Absage durch die Kundin leer.
+  cancellationReason CancellationReason? @map("cancellation_reason")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)

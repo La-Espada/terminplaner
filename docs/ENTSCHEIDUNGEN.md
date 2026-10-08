@@ -49,6 +49,7 @@ gültig, dreh sie um — aber trag die Änderung hier ein, mit Datum.
 | [E-32](#e-32) | Keine eigenen Studio-Oeffnungszeiten                  | 2026-10-08 | gueltig      |
 | [E-33](#e-33) | Festlegungen der Slot-Berechnung                      | 2026-10-08 | gueltig      |
 | [E-34](#e-34) | Kein Slot-Cache in Redis                              | 2026-10-08 | gueltig      |
+| [E-35](#e-35) | Absagegrund als Kategorie, nicht als Freitext         | 2026-10-08 | gueltig      |
 
 ---
 
@@ -813,6 +814,41 @@ Constraint.
 
 **Woran man merkt, dass die Entscheidung falsch war:** Wenn `GET /availability` unter
 normaler Last messbar langsam wird. Nicht: wenn es sich langsam anfühlt.
+
+---
+
+## E-35
+
+### Der Absagegrund ist eine Kategorie, kein Freitext
+
+**Datum:** 2026-10-08 · **Status:** gültig · **Ändert:** `appointments.cancellation_reason`
+
+**Entscheidung:** `cancellation_reason` ist keine freie Zeichenkette mehr, sondern ein Enum
+mit vier Werten: `STAFF_UNAVAILABLE`, `CUSTOMER_REQUEST`, `OPERATIONAL`, `SONSTIGES`. Beim
+Absagen durch das Studio ist er Pflicht, bei einer Absage durch die Kundin bleibt er leer.
+
+**Warum:** Die Spalte stand seit dem ersten Schema als `String?` da und fiel erst beim Bau
+von Schritt 23 auf. In ein Freitextfeld neben einem Termin schreibt das Personal
+erfahrungsgemäß, warum es nicht geklappt hat — und in einer Hautarztpraxis heißt das
+früher oder später "Patientin hat Ausschlag" oder "Reaktion auf die Creme". Damit entstünde
+ein Gesundheitsdatum nach Art. 9 in einer Spalte, die weder verschlüsselt noch an eine
+Einwilligung gebunden noch zugriffsprotokolliert ist. Genau dieselbe Überlegung hat in
+E-12 den Freitext aus `time_off` entfernt; sie war hier nur übersehen worden.
+
+Eine Kategorie beantwortet die Frage, für die das Feld da ist — wer hat abgesagt und
+warum ungefähr — und lässt sich auswerten. Ein Freitext kann beides nicht.
+
+**Konsequenz:** Wer mehr sagen will, kann es nicht. Das ist der Preis und er ist bewusst
+bezahlt: Das Studio hat ein Telefon. Falls sich herausstellt, dass eine Notiz wirklich
+gebraucht wird, gehört sie in `treatment_notes` — verschlüsselt, einwilligungsgebunden
+und protokolliert —, nicht in dieses Feld.
+
+Die Kategorie darf ins Zugriffsprotokoll, ein Freitext dürfte es nicht: Das Protokoll wird
+länger aufbewahrt als die Daten, auf die es verweist.
+
+**Woran man merkt, dass die Entscheidung falsch war:** Wenn `SONSTIGES` der mit Abstand
+häufigste Wert wird. Dann fehlt eine Kategorie — und die Antwort ist, sie zu ergänzen,
+nicht ein Textfeld daneben zu stellen.
 
 ---
 

@@ -139,6 +139,17 @@ wieder. Das Verwerfen gehört zur Buchung, also kommt beides zusammen in Schritt
       **Der absichtlich rote Test aus Schritt 6 ist grün** und trägt jetzt die
       Zusicherungen, die er verlangt hat: von 50 gleichzeitigen Buchungen genau eine
       erfolgreich, 49 mit `409` statt `500`.
+- [x] **23. Stornieren und Verschieben** — Die Kundin sagt bis zur Frist ab und ohne
+      Grund, das Studio jederzeit und mit Pflichtgrund. Verschoben wird **in derselben
+      Zeile**, nicht als Absage plus Neubuchung — sonst stünde im Konto der Kundin eine
+      Absage, die sie nie gemacht hat, und der Preisschnappschuss (E-09) wäre hinfällig.
+      Dabei fällt der Termin beim Prüfen der neuen Zeit aus der Rechnung, sonst
+      blockierte er sich beim Verschieben um eine Viertelstunde selbst.
+      Der Absagegrund ist jetzt eine Kategorie statt Freitext (E-35) — das war eine
+      Art.-9-Lücke im Schema seit dem ersten Tag.
+- [x] **Zugriffsprotokoll** als eigener Dienst. Schreibt jede Änderung an einem Termin
+      mit, hält aber niemals den Vorgang auf: Eine Lücke im Protokoll ist der kleinere
+      Schaden als ein Studio, das wegen einer vollen Festplatte nicht mehr arbeiten kann.
 
 Zum Ausprobieren: Das Admin-Konto legt der Seed an, es verschwindet bei jedem Testlauf und
 wird so wiederhergestellt:
