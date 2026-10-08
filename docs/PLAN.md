@@ -220,7 +220,10 @@ Eingabe: `service_id`, `staff_id` (oder „egal"), Datumsbereich.
 6. Slots verwerfen, die kürzer als `duration_minutes` sind
 7. Slots in der Vergangenheit und innerhalb der Vorlaufzeit (z. B. < 2 h) verwerfen
 
-Das Ergebnis wird 60 Sekunden in Redis gecacht und bei jeder Buchung invalidiert.
+~~Das Ergebnis wird 60 Sekunden in Redis gecacht und bei jeder Buchung invalidiert.~~
+**Verworfen, siehe E-34.** Die Berechnung ist drei indizierte Abfragen auf kleine
+Tabellen; ein Cache brächte vor allem einen Fehlerzustand mit sich — eine veraltete
+Liste bietet Zeiten an, die der Constraint ablehnt.
 
 ### 5.2 Buchen, absichert gegen Race Conditions
 

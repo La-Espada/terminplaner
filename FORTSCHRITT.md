@@ -131,6 +131,15 @@ Ein Cache ohne die Stelle, die ihn verwirft, liefert veraltete Slots — und ein
 auf einen veralteten Slot endet in `409`, der Client lädt neu und sieht denselben Slot
 wieder. Das Verwerfen gehört zur Buchung, also kommt beides zusammen in Schritt 22.
 
+- [x] **22. Buchen** — `POST /appointments`. Der Server rechnet, der Client schlägt vor:
+      Ende und Preis bestimmt ausschließlich der Server, die Kundin kommt aus der Sitzung.
+      Geprüft wird zweistufig — steht der Beginn in der Slot-Liste (dieselbe Funktion, die
+      auch die Liste liefert, keine zweite Wahrheit), und ist er im Augenblick des
+      Einfügens noch frei (das kann nur die Datenbank beantworten).
+      **Der absichtlich rote Test aus Schritt 6 ist grün** und trägt jetzt die
+      Zusicherungen, die er verlangt hat: von 50 gleichzeitigen Buchungen genau eine
+      erfolgreich, 49 mit `409` statt `500`.
+
 Zum Ausprobieren: Das Admin-Konto legt der Seed an, es verschwindet bei jedem Testlauf und
 wird so wiederhergestellt:
 
@@ -222,12 +231,24 @@ nicht aus dem Code heraus.
 
 ## Beobachtet, nicht erklärt
 
-- **Ein Testlauf von dreien hatte vier Fehlschlaege, zwei waren gruen.** Am 2026-10-08,
-  direkt nach dem Hinzufuegen der Slot-Tests. Welche vier, habe ich nicht festgehalten —
-  der Lauf war vorbei, bevor die Namen gesichert waren. `fileParallelism: false` ist
-  gesetzt, die Dateien raeumen sich also nicht gegenseitig die Datenbank weg; die
-  naheliegende Erklaerung scheidet damit aus. Wiederholt hat es sich nicht. Beim naechsten
-  Auftreten die Namen der Faelle sichern, bevor etwas anderes laeuft.
+- **Der Testlauf schlägt gelegentlich fehl und ist beim nächsten Mal grün.** Zweimal
+  gesehen am 2026-10-08: einmal vier Fehlschläge, einmal einer. Vier weitere Läufe waren
+  grün. Welche Fälle es traf, ist beide Male nicht gesichert — die Ausgabe war weg, bevor
+  sie jemand gelesen hat.
+
+  Geprüft und ausgeschlossen: `fileParallelism` ist bereits abgeschaltet, die Dateien
+  räumen sich also nicht gegenseitig die Datenbank weg. Auch die Vermutung, ein direkt
+  davor laufendes `prettier --write` schreibe Dateien unter dem Testlauf weg, hat sich
+  nicht bestätigt — genau so ausgeführt war der Lauf grün.
+
+  **Beim nächsten Mal zuerst die Namen sichern**, sonst wiederholt sich das:
+
+  ```
+  npx vitest run > testlauf.txt 2>&1; grep -E "FAIL|AssertionError" testlauf.txt
+  ```
+
+  Verdächtig sind die zeitabhängigen Stellen: die Anfragebegrenzung mit Redis, die
+  15-Sekunden-Nachfrist bei der Token-Rotation (E-25) und die 50 gleichzeitigen Buchungen.
 
 ## Stolpersteine, die schon geklärt sind
 

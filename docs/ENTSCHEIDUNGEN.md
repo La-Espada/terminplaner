@@ -48,6 +48,7 @@ gültig, dreh sie um — aber trag die Änderung hier ein, mit Datum.
 | [E-31](#e-31) | Leistung ohne Anbieterin ist oeffentlich unsichtbar   | 2026-10-08 | gueltig      |
 | [E-32](#e-32) | Keine eigenen Studio-Oeffnungszeiten                  | 2026-10-08 | gueltig      |
 | [E-33](#e-33) | Festlegungen der Slot-Berechnung                      | 2026-10-08 | gueltig      |
+| [E-34](#e-34) | Kein Slot-Cache in Redis                              | 2026-10-08 | gueltig      |
 
 ---
 
@@ -779,6 +780,39 @@ Anwendung — die Datenbank fängt einen Fehler dort nicht ab.
 **Woran man merkt, dass etwas falsch ist:** Wenn Buchungen auf angebotene Slots mit `409`
 scheitern. Dann sind Slot-Berechnung und Constraint auseinandergelaufen, und Punkt 2 ist
 der erste Ort zum Nachsehen.
+
+---
+
+## E-34
+
+### Kein Zwischenspeichern der Slots in Redis
+
+**Datum:** 2026-10-08 · **Status:** gültig · **Ändert:** PLAN.md 5.1
+
+**Entscheidung:** Die Slot-Liste wird nicht gecacht. `PLAN.md` 5.1 sah vor, das Ergebnis
+60 Sekunden in Redis zu halten und bei jeder Buchung zu verwerfen. Das entfällt.
+
+**Warum:** Der Plan entstand, bevor es die Berechnung gab. Jetzt, wo sie steht, ist
+sichtbar, was sie kostet: drei indizierte Abfragen auf kleine Tabellen — ein Studio hat
+eine Handvoll Leistungen, eine Handvoll Kosmetiker:innen und ein paar hundert Termine im
+Jahr. Dafür einen Cache zu bauen heißt, einen Fehlerzustand einzuführen, den es sonst
+nicht gäbe.
+
+Und dieser Fehlerzustand ist genau der, gegen den die ganze Buchungslogik absichert: Eine
+veraltete Slot-Liste bietet eine Zeit an, die der `EXCLUDE`-Constraint ablehnt. Die Buchung
+endet in `409`, die App lädt die Slots neu, bekommt dieselbe veraltete Liste und bietet
+denselben Slot wieder an. Die Kundin sitzt in einer Schleife, und zwar bis zu 60 Sekunden
+lang — im schlimmsten Fall genau dann, wenn viele gleichzeitig buchen, also wenn der Cache
+seinen einzigen Zweck erfüllen soll.
+
+**Konsequenz:** Wird es doch einmal eng, ist der Cache nachträglich einzubauen — aber
+dann mit gemessener Begründung und mit dem Verwerfen an derselben Stelle wie das Einfügen,
+in derselben Transaktion. Eine Invalidierung, die nach dem Commit läuft, hat dasselbe
+Zeitfenster wie eine Prüfung in der Anwendung, und aus demselben Grund gibt es den
+Constraint.
+
+**Woran man merkt, dass die Entscheidung falsch war:** Wenn `GET /availability` unter
+normaler Last messbar langsam wird. Nicht: wenn es sich langsam anfühlt.
 
 ---
 
